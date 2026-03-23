@@ -62,6 +62,61 @@ html, body {
 #app { display: flex; flex-direction: column; height: 100vh; }
 #main { flex: 1; overflow: hidden; display: flex; min-height: 0; }
 
+/* ── Fond atome TFTL ── */
+#atom-bg {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#atom-bg svg {
+  position: absolute;
+  width: 700px;
+  height: 500px;
+  top: -250px;
+  left: -350px;
+  overflow: visible;
+}
+
+.e-track {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+}
+
+.e-spin {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  animation: atom-spin linear infinite;
+}
+
+.electron {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  top: -3px;
+  left: 50%;
+  margin-left: -3px;
+}
+
+@keyframes atom-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* S'assure que tout le contenu passe par-dessus */
+#app { position: relative; z-index: 1; }
+
+/* Respect des préférences d'accessibilité */
+@media (prefers-reduced-motion: reduce) {
+  .e-spin { animation: none; }
+}
+
 /* ══════════════════════════════════════════════════════════════
    TOP BAR — Grid layout : 1 ligne desktop, 2 lignes mobile
    ══════════════════════════════════════════════════════════════ */
