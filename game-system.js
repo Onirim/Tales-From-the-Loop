@@ -14,7 +14,7 @@
 // ── 1. IDENTITÉ DU JEU ────────────────────────────────────────
 // Utilisé dans le <title>, le manifest, le logo topbar.
 
-const GAME_NAME       = 'Energy System';
+const GAME_NAME       = 'Tales From the Loop';
 const GAME_SUBTITLE   = 'Gestionnaire de campagne'; // affiché sous le logo
 
 
