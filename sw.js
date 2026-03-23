@@ -6,24 +6,24 @@
 //   - Images Supabase → Network First avec fallback cache
 // ══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'site-name-v1';
+const CACHE_NAME = 'Tales-From-The-Loop-v1';
 
 // Assets mis en cache dès l'installation
 const PRECACHE_ASSETS = [
-  '/site-name/',
-  '/site-name/index.html',
-  '/site-name/styles.css',
-  '/site-name/chronicles.css',
-  '/site-name/documents.css',
-  '/site-name/campaigns.css',
-  '/site-name/i18n.js',
-  '/site-name/supabase-client.js',
-  '/site-name/scripts.js',
-  '/site-name/editor.js',
-  '/site-name/chronicles.js',
-  '/site-name/documents.js',
-  '/site-name/campaigns.js',
-  '/site-name/tags.js',
+  '/Tales-From-The-Loop/',
+  '/Tales-From-The-Loop/index.html',
+  '/Tales-From-The-Loop/styles.css',
+  '/Tales-From-The-Loop/chronicles.css',
+  '/Tales-From-The-Loop/documents.css',
+  '/Tales-From-The-Loop/campaigns.css',
+  '/Tales-From-The-Loop/i18n.js',
+  '/Tales-From-The-Loop/supabase-client.js',
+  '/Tales-From-The-Loop/scripts.js',
+  '/Tales-From-The-Loop/editor.js',
+  '/Tales-From-The-Loop/chronicles.js',
+  '/Tales-From-The-Loop/documents.js',
+  '/Tales-From-The-Loop/campaigns.js',
+  '/Tales-From-The-Loop/tags.js',
 ];
 
 // ── Installation : pré-cache des assets statiques ─────────────
