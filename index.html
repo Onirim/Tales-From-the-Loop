@@ -53,6 +53,37 @@
 </style>
 </head>
 <body>
+  <!-- ── Fond atome TFTL ── -->
+<div id="atom-bg" aria-hidden="true">
+
+  <!-- Orbites SVG fixes -->
+  <svg viewBox="-350 -250 700 500">
+    <ellipse cx="0" cy="0" rx="280" ry="90"  fill="none" stroke="rgba(37,52,71,0.9)"  stroke-width="1" transform="rotate(-20)"/>
+    <ellipse cx="0" cy="0" rx="230" ry="75"  fill="none" stroke="rgba(37,52,71,0.9)"  stroke-width="1" transform="rotate(50)"/>
+    <ellipse cx="0" cy="0" rx="200" ry="60"  fill="none" stroke="rgba(37,52,71,0.85)" stroke-width="1" transform="rotate(-70)"/>
+    <circle  cx="0" cy="0" r="22"  fill="rgba(200,117,51,0.06)"/>
+    <circle  cx="0" cy="0" r="14"  fill="rgba(200,117,51,0.1)"/>
+    <circle  cx="0" cy="0" r="6"   fill="#c87533" opacity="0.9"/>
+    <circle  cx="0" cy="0" r="3"   fill="#e8a060"/>
+  </svg>
+
+  <!-- Électrons (HTML + CSS animation) -->
+  <div class="e-track" style="width:560px;height:180px;margin-top:-90px;margin-left:-280px;transform:rotate(-20deg)">
+    <div class="e-spin" style="animation-duration:36s">
+      <div class="electron" style="background:#4a7fa8;box-shadow:0 0 10px rgba(74,127,168,0.7),0 0 20px rgba(74,127,168,0.25)"></div>
+    </div>
+  </div>
+  <div class="e-track" style="width:460px;height:150px;margin-top:-75px;margin-left:-230px;transform:rotate(50deg)">
+    <div class="e-spin" style="animation-duration:54s;animation-direction:reverse">
+      <div class="electron" style="background:#7a6eb5;box-shadow:0 0 10px rgba(122,110,181,0.7),0 0 20px rgba(122,110,181,0.25)"></div>
+    </div>
+  </div>
+  <div class="e-track" style="width:400px;height:120px;margin-top:-60px;margin-left:-200px;transform:rotate(-70deg)">
+    <div class="e-spin" style="animation-duration:44s">
+      <div class="electron" style="background:#5a9e6e;box-shadow:0 0 10px rgba(90,158,110,0.7),0 0 20px rgba(90,158,110,0.25)"></div>
+    </div>
+  </div>
+</div>
 <!-- Loading overlay -->
 <div id="loading-overlay" class="active">
   <div class="spinner"></div>
