@@ -18,29 +18,29 @@ a:hover { color: var(--accent2); }
 }
 
 :root {
-  --bg: #0e0f13;
-  --bg2: #14151b;
-  --bg3: #1c1e27;
-  --bg4: #23262f;
-  --border: #2e3140;
-  --border2: #3d4155;
-  --text: #e8eaf0;
-  --text2: #9196a8;
-  --text3: #5c6070;
-  --accent: #e8c46a;
-  --accent2: #c9a84c;
-  --offc: #e05c5c;
-  --offd: #e07a3a;
-  --def: #5c9be0;
-  --mov: #5cbf7a;
-  --sup: #9b7de8;
-  --energy-color: #e05c5c;
-  --recovery-color: #e07a3a;
-  --vigor-color: #5cbf7a;
-  --rank-color: #e8c46a;
+  --bg:      #0d1117;   /* Nuit profonde — ciel d'hiver */
+  --bg2:     #131920;   /* Surfaces — maisons dans le brouillard */
+  --bg3:     #1a2430;   /* Éléments — métal rouillé dans l'ombre */
+  --bg4:     #1f2d3d;   /* Inputs */
+  --border:  #253447;   /* Contours — glace bleue */
+  --border2: #334d66;   /* Hover */
+  --text:    #d4dfe9;   /* Texte — lumière froide hivernale */
+  --text2:   #7a9ab5;   /* Secondaire — acier brumeux */
+  --text3:   #445e75;   /* Tertiaire — ombre bleue */
+  --accent:  #c87533;   /* Orange rouillé — machines abandonnées */
+  --accent2: #a85e20;   /* Orange profond */
+  --offc:    #c84040;   /* Rouge-brique — danger */
+  --offd:    #b05c2a;   /* Brun rouillé */
+  --def:     #4a7fa8;   /* Bleu acier — défense */
+  --mov:     #5a9e6e;   /* Vert mousse suédois */
+  --sup:     #7a6eb5;   /* Violet tamisé — support */
+  --energy-color:   #c84040;
+  --recovery-color: #b05c2a;
+  --vigor-color:    #5a9e6e;
+  --rank-color:     #c87533;
   --font-display: 'Barlow Condensed', sans-serif;
-  --font-body: 'Barlow', sans-serif;
-  --font-mono: 'Space Mono', monospace;
+  --font-body:    'Barlow', sans-serif;
+  --font-mono:    'Space Mono', monospace;
 }
 
 html, body {
