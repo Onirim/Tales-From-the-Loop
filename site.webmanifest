@@ -1,23 +1,23 @@
 {
-  "name": "Energy System",
-  "short_name": "Energy Sys.",
-  "description": "Gestionnaire de campagne pour le jeu de rôle Energy System",
+  "name": "Tales From the Loop",
+  "short_name": "TFtLoop",
+  "description": "Gestionnaire de campagne pour le jeu de rôle Tales From the Loop",
   "lang": "fr",
-  "start_url": "/Energy-System/",
-  "scope": "/Energy-System/",
+  "start_url": "/Tales-From-the-Loop/",
+  "scope": "/Tales-From-the-Loop/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "theme_color": "#0e0f13",
   "background_color": "#0e0f13",
   "icons": [
     {
-      "src": "/Energy-System/android-chrome-192x192.png",
+      "src": "/Tales-From-the-Loop/android-chrome-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/Energy-System/android-chrome-512x512.png",
+      "src": "/Tales-From-the-Loop/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
