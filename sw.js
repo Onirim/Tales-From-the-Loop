@@ -16,6 +16,7 @@ const PRECACHE_ASSETS = [
   '/Tales-From-the-Loop/chronicles.css',
   '/Tales-From-the-Loop/documents.css',
   '/Tales-From-the-Loop/campaigns.css',
+  '/Tales-From-the-Loop/tftl.css',
   '/Tales-From-the-Loop/i18n.js',
   '/Tales-From-the-Loop/supabase-client.js',
   '/Tales-From-the-Loop/scripts.js',
