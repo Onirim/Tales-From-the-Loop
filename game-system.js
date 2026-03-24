@@ -176,7 +176,7 @@ function renderCharCardBody(c) {
   return `
     <div class="card-name">${esc(c.name) || '—'}</div>
     <div class="card-sub">${esc(stereo)} · ${c.age || '?'} ${t('card_age_suffix')}</div>
-    <div class="card-rank">${t('card_luck_label')}${luck}</div>
+    <div class="card-rank">${t('card_luck_label')}${luck} ${t('luck_label')}</div>
     <div class="card-attrs">
       <div class="card-attr e">
         <div class="val">${c.physique || 1}</div>
