@@ -1,6 +1,5 @@
 // ══════════════════════════════════════════════════════════════
-// TALES FROM THE LOOP — Éditeur de personnage (Enfant)
-// Remplace editor.js du template Energy System
+// TALES FROM THE LOOP — Éditeur de personnage (Enfant / Adulte)
 // ══════════════════════════════════════════════════════════════
 
 function newChar() {
@@ -29,8 +28,15 @@ function editChar(id, dataOverride) {
 function populateEditor() {
   document.getElementById('f-name').value      = state.name || '';
   document.getElementById('f-sub').value       = state.subtitle || '';
-  document.getElementById('f-age').value       = state.age || 12;
-  document.getElementById('f-stereotype').value = state.stereotype || 'geek';
+
+  // Sélecteur âge / adulte
+  const ageSelect = document.getElementById('f-age');
+  if (ageSelect) {
+    ageSelect.value = state.is_adult ? 'adult' : (state.age || 12);
+  }
+
+  const stereoField = document.getElementById('f-stereotype');
+  if (stereoField) stereoField.value = state.stereotype || 'geek';
 
   const pubCb = document.getElementById('f-public');
   if (pubCb) {
@@ -40,6 +46,7 @@ function populateEditor() {
   }
   _updateShareCodeBox();
 
+  _applyAdultMode(state.is_adult || false);
   _renderAttrs();
   _renderSkills();
   _renderNarratif();
@@ -53,6 +60,34 @@ function populateEditor() {
   updatePreview();
   updatePtsDisplay();
   updateAptPtsDisplay();
+}
+
+// ── Mode adulte / enfant ────────────────────────────────────────
+// Masque ou affiche les sections réservées aux enfants
+function _applyAdultMode(isAdult) {
+  const childOnlySections = [
+    document.getElementById('editor-section-attrs'),
+    document.getElementById('editor-section-skills'),
+    document.getElementById('editor-section-stereotype-age'),
+  ];
+  childOnlySections.forEach(el => {
+    if (el) el.style.display = isAdult ? 'none' : '';
+  });
+}
+
+// ── Handler du sélecteur âge ───────────────────────────────────
+function onAgeChange(val) {
+  if (val === 'adult') {
+    state.is_adult = true;
+    state.age      = null;
+    _applyAdultMode(true);
+  } else {
+    state.is_adult = false;
+    state.age      = parseInt(val);
+    _applyAdultMode(false);
+  }
+  updatePtsDisplay();
+  updatePreview();
 }
 
 // ── Share code ─────────────────────────────────────────────────
@@ -75,7 +110,6 @@ function _renderAttrs() {
   ['physique', 'technique', 'coeur', 'intelligence'].forEach(attr => {
     const el = document.getElementById('val-' + attr);
     if (el) el.textContent = state[attr] || 1;
-    // coûts
     const cost = document.getElementById('cost-' + attr);
     if (cost) cost.textContent = (state[attr] || 1) + ' pts';
   });
@@ -101,17 +135,14 @@ function updatePtsDisplay() {
     el.textContent = `${used} / ${max}`;
     el.className   = 'pts-value ' + (used > max ? 'over' : 'ok');
   }
-  // Recalcule les chances
   const luckEl = document.getElementById('luck-display');
   if (luckEl) luckEl.textContent = luckPoints(state.age || 12);
 }
 
 function updateRankMax() {
-  // utilisé par l'age maintenant
-  state.age = parseInt(document.getElementById('f-age')?.value || 12);
-  updatePtsDisplay();
-  updateAptPtsDisplay();
-  updatePreview();
+  // L'age est maintenant géré par onAgeChange, mais on garde le stub
+  const ageSelect = document.getElementById('f-age');
+  if (ageSelect) onAgeChange(ageSelect.value);
 }
 
 // ── Compétences ────────────────────────────────────────────────
@@ -230,7 +261,7 @@ function removeLien(i) {
 function updatePreview() {
   state.name             = document.getElementById('f-name')?.value      || state.name;
   state.subtitle         = document.getElementById('f-sub')?.value       || '';
-  state.age              = parseInt(document.getElementById('f-age')?.value || 12);
+  // is_adult & age sont gérés par onAgeChange, on ne les re-lit pas ici pour éviter un écrasement
   state.stereotype       = document.getElementById('f-stereotype')?.value  || state.stereotype;
   state.motivation       = document.getElementById('f-motivation')?.value   || '';
   state.probleme         = document.getElementById('f-probleme')?.value     || '';

@@ -17,6 +17,7 @@ function freshState() {
   return {
     name:                 '',
     subtitle:             '',   // identité réelle / surnom
+    is_adult:             false, // true = PNJ/adulte, false = enfant (règles complètes)
     stereotype:           'geek',
     age:                  12,
     // Attributs (min 1, max 5 — répartis à hauteur de l'âge)
@@ -168,6 +169,18 @@ const APTITUDES_KEYS         = [];
 // ── 6. RENDU CARTE ROSTER ─────────────────────────────────────
 
 function renderCharCardBody(c) {
+  // ── Adulte : fiche simplifiée ──────────────────────────────
+  if (c.is_adult) {
+    return `
+      <div class="card-name">${esc(c.name) || '—'}</div>
+      <div class="card-sub">${esc(c.subtitle) || ''}</div>
+      <div class="card-rank" style="background:rgba(74,127,168,0.12);color:var(--def);border-color:rgba(74,127,168,0.25)">
+        ${t('card_adult_label')}
+      </div>
+    `;
+  }
+
+  // ── Enfant : fiche complète ────────────────────────────────
   const stereo = c.stereotype
     ? STEREOTYPE_OPTIONS().find(x => x.value === c.stereotype)?.label || c.stereotype
     : '—';
@@ -202,6 +215,67 @@ function renderCharCardBody(c) {
 // ── 7. RENDU PREVIEW / VUE PARTAGÉE ──────────────────────────
 
 function renderCharSheet(data) {
+  const illusHtml = data.illustration_url
+    ? `<img class="preview-illus"
+         src="${esc(data.illustration_url)}"
+         style="object-position:center ${data.illustration_position || 0}%"
+         onclick="openLightbox('${esc(data.illustration_url)}')" alt="">`
+    : '';
+
+  // ── Fiche adulte ───────────────────────────────────────────
+  if (data.is_adult) {
+    const narratifHtml = [
+      data.motivation    && _narratifBlock(t('preview_motivation'),    data.motivation),
+      data.probleme      && _narratifBlock(t('preview_probleme'),      data.probleme),
+      data.fierte        && _narratifBlock(t('preview_fierte'),        data.fierte),
+      data.objet_fetiche && _narratifBlock(t('preview_objet_fetiche'), data.objet_fetiche, true),
+    ].filter(Boolean).join('');
+
+    const liensData = (data.liens || []).filter(l => l && (typeof l === 'object' ? l.label : l));
+    const liensHtml = liensData.length ? `
+      <div class="preview-section-title">${t('preview_liens')}</div>
+      <div class="tftl-liens-list">
+        ${liensData.map(l => {
+          const label  = typeof l === 'object' ? l.label  : l;
+          const detail = typeof l === 'object' ? l.detail : '';
+          return `<div class="tftl-lien-chip">
+            <div class="lien-label">${esc(label)}</div>
+            ${detail ? `<div class="lien-detail">${esc(detail)}</div>` : ''}
+          </div>`;
+        }).join('')}
+      </div>` : '';
+
+    const bgHtml = data.background ? `
+      <div class="preview-section-title">${t('preview_background')}</div>
+      <div class="background-preview">${esc(data.background)}</div>` : '';
+
+    const chansonHtml = data.chanson_favorite ? `
+      <div class="tftl-chanson">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="13" height="13">
+          <path d="M9 3v7.5a2 2 0 11-1-1.73V4.5L6 5V3l3-1v1z"/>
+        </svg>
+        ${esc(data.chanson_favorite)}
+      </div>` : '';
+
+    return `
+      ${illusHtml}
+      <div class="preview-header">
+        <div class="preview-name">${esc(data.name) || '—'}</div>
+        ${data.subtitle ? `<div class="preview-sub">${esc(data.subtitle)}</div>` : ''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px">
+          <div class="preview-rank-badge" style="background:rgba(74,127,168,0.12);color:var(--def);border-color:rgba(74,127,168,0.3)">
+            ${t('card_adult_label')}
+          </div>
+        </div>
+      </div>
+      ${narratifHtml ? `<div class="preview-section-title">${t('preview_section_narratif')}</div>${narratifHtml}` : ''}
+      ${liensHtml}
+      ${bgHtml}
+      ${chansonHtml}
+    `;
+  }
+
+  // ── Fiche enfant (complète) ────────────────────────────────
   const stereo = data.stereotype
     ? STEREOTYPE_OPTIONS().find(x => x.value === data.stereotype)?.label || data.stereotype
     : '—';
@@ -271,12 +345,7 @@ function renderCharSheet(data) {
     </div>` : '';
 
   return `
-    ${data.illustration_url
-      ? `<img class="preview-illus"
-           src="${esc(data.illustration_url)}"
-           style="object-position:center ${data.illustration_position || 0}%"
-           onclick="openLightbox('${esc(data.illustration_url)}')" alt="">`
-      : ''}
+    ${illusHtml}
     <div class="preview-header">
       <div class="preview-name">${esc(data.name) || '—'}</div>
       ${data.subtitle ? `<div class="preview-sub">${esc(data.subtitle)}</div>` : ''}
@@ -303,7 +372,6 @@ function renderCharSheet(data) {
 
 function _attrBlock(key, val, cls) {
   const v = val || 1;
-  // 's' (intelligence) n'a pas de classe pip native → on utilise inline style
   const activePip = cls === 's'
     ? `<div class="pip" style="background:var(--sup)"></div>`
     : `<div class="pip ${cls}"></div>`;
@@ -320,7 +388,7 @@ function _attrBlock(key, val, cls) {
 
 function _skillRow(key, val, isKey) {
   const attr = SKILL_ATTR[key];
-  const total = val; // juste la compétence, l'attribut s'ajoute au jet
+  const total = val;
   const dots = Array.from({length: 5}, (_, i) =>
     `<div class="skill-dot ${i < total ? '' : 'empty'}"></div>`
   ).join('');
@@ -363,6 +431,11 @@ const GAME_I18N = {
     stereotype_frimeur:     'Frimeur',
     stereotype_inventeur:   'Inventeur',
     stereotype_roliste:     'Rôliste',
+
+    // Adulte
+    card_adult_label:        'Adulte',
+    editor_field_is_adult:   'Personnage adulte',
+    editor_adult_hint:       'Les adultes n\'ont pas d\'attributs ni de stéréotype.',
 
     // Attributs
     attr_physique:           'Physique',
@@ -426,7 +499,7 @@ const GAME_I18N = {
     editor_motivation_label:       'Motivation',
     editor_motivation_ph:          'Pourquoi s\'exposer aux mystères ?',
     editor_probleme_label:         'Problème',
-    editor_probleme_ph:            'Quel problème personnel compli-que la vie ?',
+    editor_probleme_ph:            'Quel problème personnel complique la vie ?',
     editor_fierte_label:           'Fierté',
     editor_fierte_ph:              'Ce qui rend le personnage fort (1× par mystère : réussite auto)',
     editor_objet_fetiche_label:    'Objet fétiche',
@@ -456,6 +529,11 @@ const GAME_I18N = {
     stereotype_frimeur:     'Troublemaker',
     stereotype_inventeur:   'Inventor',
     stereotype_roliste:     'Roleplayer',
+
+    // Adult
+    card_adult_label:        'Adult',
+    editor_field_is_adult:   'Adult character',
+    editor_adult_hint:       'Adults have no attributes or archetype.',
 
     attr_physique:           'Body',
     attr_physique_short:     'BOD',
