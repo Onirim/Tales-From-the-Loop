@@ -6,7 +6,7 @@
 //   - Images Supabase → Network First avec fallback cache
 // ══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'Tales-From-the-Loop-v10';
+const CACHE_NAME = 'Tales-From-the-Loop-v11';
 
 // Assets mis en cache dès l'installation
 const PRECACHE_ASSETS = [
