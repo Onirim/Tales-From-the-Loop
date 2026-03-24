@@ -308,46 +308,56 @@
           placeholder="Ex: Martine, dite la Sauterelle"
           oninput="updatePreview()">
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="field">
-          <label><span data-i18n="editor_field_age">Âge</span> <span style="color:var(--text3);font-size:11px" data-i18n="editor_field_age_detail">(10–15 ans)</span></label>
-          <select id="f-age" onchange="updateRankMax(); updatePreview()">
-            <option value="10">10 ans</option>
-            <option value="11">11 ans</option>
-            <option value="12" selected>12 ans</option>
-            <option value="13">13 ans</option>
-            <option value="14">14 ans</option>
-            <option value="15">15 ans</option>
-          </select>
+ 
+      <!-- ══ Sélecteur Âge / Adulte ══
+           L'option "adult" déclenche le mode adulte via onAgeChange().
+           Les sections enfant-only seront masquées dynamiquement.      -->
+      <div class="field" id="editor-section-stereotype-age">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field">
+            <label>
+              <span data-i18n="editor_field_age">Âge</span>
+              <span style="color:var(--text3);font-size:11px" data-i18n="editor_field_age_detail"> (10–15 ans)</span>
+            </label>
+            <select id="f-age" onchange="onAgeChange(this.value)">
+              <option value="adult">— Adulte —</option>
+              <option value="10">10 ans</option>
+              <option value="11">11 ans</option>
+              <option value="12" selected>12 ans</option>
+              <option value="13">13 ans</option>
+              <option value="14">14 ans</option>
+              <option value="15">15 ans</option>
+            </select>
+          </div>
+          <div class="field">
+            <label data-i18n="editor_field_stereotype">Stéréotype</label>
+            <select id="f-stereotype" onchange="updatePreview()">
+              <option value="campagnard">Campagnard</option>
+              <option value="excentrique">Excentrique</option>
+              <option value="geek" selected>Geek</option>
+              <option value="intello">Intello</option>
+              <option value="metalleux">Métalleux</option>
+              <option value="rebelle">Rebelle</option>
+              <option value="sportif">Sportif</option>
+              <option value="star">Star de l'école</option>
+              <option value="combinard">Combinard</option>
+              <option value="frimeur">Frimeur</option>
+              <option value="inventeur">Inventeur</option>
+              <option value="roliste">Rôliste</option>
+            </select>
+          </div>
         </div>
-        <div class="field">
-          <label data-i18n="editor_field_stereotype">Stéréotype</label>
-          <select id="f-stereotype" onchange="updatePreview()">
-            <option value="campagnard">Campagnard</option>
-            <option value="excentrique">Excentrique</option>
-            <option value="geek" selected>Geek</option>
-            <option value="intello">Intello</option>
-            <option value="metalleux">Métalleux</option>
-            <option value="rebelle">Rebelle</option>
-            <option value="sportif">Sportif</option>
-            <option value="star">Star de l'école</option>
-            <option value="combinard">Combinard</option>
-            <option value="frimeur">Frimeur</option>
-            <option value="inventeur">Inventeur</option>
-            <option value="roliste">Rôliste</option>
-          </select>
+ 
+        <!-- Points de chance (calculé, enfants seulement) -->
+        <div class="tftl-luck-bar">
+          <span style="font-size:11px;color:var(--text3);font-weight:500;letter-spacing:0.05em;text-transform:uppercase">
+            ★ Points de chance
+          </span>
+          <span class="pts-value ok" id="luck-display">3</span>
+          <span style="font-size:10px;color:var(--text3)">(15 − âge)</span>
         </div>
       </div>
-
-      <!-- Points de chance (calculé) -->
-      <div class="tftl-luck-bar">
-        <span style="font-size:11px;color:var(--text3);font-weight:500;letter-spacing:0.05em;text-transform:uppercase">
-          ★ Points de chance
-        </span>
-        <span class="pts-value ok" id="luck-display">3</span>
-        <span style="font-size:10px;color:var(--text3)">(15 − âge)</span>
-      </div>
-
+ 
       <!-- Partage public -->
       <div class="field" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
         <label style="margin-bottom:0" data-i18n="editor_field_public">Partage public</label>
@@ -366,16 +376,16 @@
         </button>
       </div>
     </div>
-
-    <!-- Attributs -->
-    <div class="form-section">
+ 
+    <!-- ══ Attributs (enfants seulement — masqué si adulte) ══ -->
+    <div class="form-section" id="editor-section-attrs">
       <div class="form-section-title" data-i18n="editor_section_attrs">Attributs</div>
       <div class="pts-bar">
         <span class="pts-label" data-i18n="editor_pts_hero">Points d'attributs</span>
         <span class="pts-value" id="pts-display">8 / 12</span>
       </div>
       <p style="font-size:11px;color:var(--text3);margin-bottom:12px" data-i18n="editor_attrs_detail">Répartissez un total égal à votre âge (min 1, max 5)</p>
-
+ 
       <!-- Physique -->
       <div class="attr-row">
         <div class="attr-name" style="color:var(--energy-color)">
@@ -425,9 +435,9 @@
         </div>
       </div>
     </div>
-
-    <!-- Compétences -->
-    <div class="form-section">
+ 
+    <!-- ══ Compétences (enfants seulement — masqué si adulte) ══ -->
+    <div class="form-section" id="editor-section-skills">
       <div class="form-section-title" data-i18n="editor_section_skills">Compétences</div>
       <div class="apt-pts-bar">
         <span class="lbl" data-i18n="editor_pts_aptitudes">Points de compétences</span>
