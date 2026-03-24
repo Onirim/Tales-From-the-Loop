@@ -159,64 +159,7 @@
   font-size: 12px; color: var(--text3); margin-top: 3px; line-height: 1.5;
 }
 
-/* ── État dans la preview ── */
-.tftl-etat-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-}
-.tftl-etat-item {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--bg2); border: 1px solid var(--border);
-  border-radius: 6px; padding: 8px 10px; opacity: 0.45;
-}
-.tftl-etat-item.checked { opacity: 1; border-color: var(--offc); }
-.etat-box {
-  width: 22px; height: 22px; border: 2px solid var(--border2);
-  border-radius: 3px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 700; color: var(--offc);
-}
-.tftl-etat-item.checked .etat-box { border-color: var(--offc); background: rgba(224,92,92,0.12); }
-.etat-label {
-  font-size: 12px; font-weight: 600; color: var(--text);
-}
-.etat-penalty {
-  font-size: 10px; color: var(--text3); font-family: var(--font-mono);
-}
 
-/* Éditeur état */
-.tftl-etat-editor {
-  display: flex; flex-direction: column; gap: 8px;
-}
-.etat-editor-row {
-  display: flex; align-items: center; gap: 12px; cursor: pointer;
-  background: var(--bg3); border: 1px solid var(--border);
-  border-radius: 6px; padding: 8px 12px;
-  transition: all 0.15s; user-select: none;
-}
-.etat-editor-row:hover { border-color: var(--border2); }
-.etat-box-editor {
-  width: 22px; height: 22px; border: 2px solid var(--border2);
-  border-radius: 3px; flex-shrink: 0; transition: all 0.15s;
-}
-.etat-box-editor.brise { border-color: var(--offc); }
-.etat-editor-label {
-  font-size: 13px; color: var(--text2); font-weight: 500;
-}
-.etat-editor-penalty {
-  font-size: 10px; color: var(--text3); font-family: var(--font-mono);
-}
-
-/* État coché dans l'éditeur — via JS sur le parent */
-.etat-editor-row.active .etat-box-editor {
-  background: rgba(224,92,92,0.15);
-  border-color: var(--offc);
-}
-.etat-editor-row.active .etat-box-editor::after {
-  content: '✕'; display: flex; align-items: center; justify-content: center;
-  width: 100%; height: 100%;
-  font-size: 13px; font-weight: 700; color: var(--offc);
-  line-height: 1;
-}
 
 /* ── Chanson dans la preview ── */
 .tftl-chanson {
