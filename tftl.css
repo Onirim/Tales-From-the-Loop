@@ -1,0 +1,253 @@
+/* ══════════════════════════════════════════════════════════════
+   TALES FROM THE LOOP — Styles additionnels
+   À inclure après styles.css dans index.html
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Attribut Intelligence (4e attribut) ── */
+.card-attr.s .val { color: var(--sup); }
+.attr-ctrl .attr-val.s { color: var(--sup); }
+.preview-attr.s { border-left: 3px solid var(--sup); }
+.preview-attr.s .val { color: var(--sup); }
+.tftl-attr-block.s .val { color: var(--sup); }
+
+/* ── Grille 4 attributs ── */
+.tftl-attrs-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.tftl-attr-block {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 10px;
+  text-align: center;
+}
+.tftl-attr-block.e { border-left: 3px solid var(--energy-color); }
+.tftl-attr-block.r { border-left: 3px solid var(--recovery-color); }
+.tftl-attr-block.v { border-left: 3px solid var(--vigor-color); }
+.tftl-attr-block.s { border-left: 3px solid var(--sup); }
+.tftl-attr-block .val {
+  font-family: var(--font-mono); font-size: 28px; font-weight: 700; line-height: 1;
+}
+.tftl-attr-block.e .val { color: var(--energy-color); }
+.tftl-attr-block.r .val { color: var(--recovery-color); }
+.tftl-attr-block.v .val { color: var(--vigor-color); }
+.tftl-attr-block .lbl {
+  font-size: 10px; color: var(--text3); margin-top: 4px;
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.tftl-attr-block .pips {
+  display: flex; gap: 3px; justify-content: center; flex-wrap: wrap; margin-top: 8px;
+}
+
+/* ── Compétences ── */
+.tftl-skills-grid {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.tftl-skill-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 0;
+}
+.tftl-skill-row.key-skill {
+  background: rgba(200,117,51,0.06);
+  border-radius: 4px; padding: 4px 6px;
+}
+.skill-name {
+  flex: 1; font-size: 13px; color: var(--text2);
+  display: flex; align-items: center; gap: 4px;
+}
+.skill-attr-tag {
+  font-family: var(--font-mono); font-size: 9px; color: var(--text3);
+  background: var(--bg3); border: 1px solid var(--border);
+  padding: 1px 5px; border-radius: 3px; margin-left: 4px;
+}
+.skill-dots {
+  display: flex; gap: 4px;
+}
+.skill-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--sup);
+}
+.skill-dot.empty {
+  background: var(--bg4); border: 1px solid var(--border);
+}
+.skill-val {
+  font-family: var(--font-mono); font-size: 13px; font-weight: 700;
+  width: 18px; text-align: center; color: var(--sup);
+}
+.skill-val.zero { color: var(--text3); }
+.key-marker { color: var(--accent); font-size: 11px; }
+
+/* Éditeur compétences */
+.skill-editor-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 6px; padding: 3px 0;
+}
+.skill-editor-row.key-skill {
+  background: rgba(200,117,51,0.06);
+  border-radius: 4px; padding: 4px 6px; margin-bottom: 4px;
+}
+.skill-editor-name {
+  flex: 1; font-size: 12px; color: var(--text2);
+  display: flex; align-items: center; gap: 4px; white-space: nowrap;
+}
+.skill-ctrl {
+  display: flex; align-items: center; gap: 6px;
+}
+.skill-ctrl button {
+  width: 22px; height: 22px; border-radius: 3px;
+  background: var(--bg4); border: 1px solid var(--border);
+  color: var(--text); cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+}
+.skill-ctrl button:hover { border-color: var(--border2); }
+
+/* ── Badges âge, chance ── */
+.tftl-age-badge {
+  font-family: var(--font-mono); font-size: 11px;
+  background: rgba(122,110,181,0.12); color: var(--sup);
+  border: 1px solid rgba(122,110,181,0.25);
+  padding: 3px 10px; border-radius: 3px; display: inline-block;
+}
+.tftl-luck-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono); font-size: 11px;
+  background: rgba(200,117,51,0.12); color: var(--accent);
+  border: 1px solid rgba(200,117,51,0.25);
+  padding: 3px 10px; border-radius: 3px;
+}
+
+/* Barre chance dans l'éditeur */
+.tftl-luck-bar {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 4px; padding: 8px 12px; margin-top: 10px;
+}
+.tftl-luck-bar .pts-value { font-size: 18px; }
+
+/* ── Blocs narratifs dans la preview ── */
+.tftl-narratif-block {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-left: 3px solid var(--border2);
+  border-radius: 0 6px 6px 0; padding: 10px 14px; margin-bottom: 8px;
+}
+.tftl-narratif-block.fetiche {
+  border-left-color: var(--accent);
+  background: rgba(200,117,51,0.06);
+}
+.narratif-label {
+  font-family: var(--font-display); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3);
+  margin-bottom: 4px;
+}
+.narratif-content {
+  font-size: 13px; color: var(--text2); line-height: 1.6;
+}
+
+/* ── Liens ── */
+.tftl-liens-list {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.tftl-lien-chip {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-left: 3px solid var(--def);
+  border-radius: 0 6px 6px 0; padding: 8px 12px;
+}
+.lien-label {
+  font-size: 13px; font-weight: 500; color: var(--text);
+}
+.lien-detail {
+  font-size: 12px; color: var(--text3); margin-top: 3px; line-height: 1.5;
+}
+
+/* ── État dans la preview ── */
+.tftl-etat-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+}
+.tftl-etat-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 8px 10px; opacity: 0.45;
+}
+.tftl-etat-item.checked { opacity: 1; border-color: var(--offc); }
+.etat-box {
+  width: 22px; height: 22px; border: 2px solid var(--border2);
+  border-radius: 3px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: var(--offc);
+}
+.tftl-etat-item.checked .etat-box { border-color: var(--offc); background: rgba(224,92,92,0.12); }
+.etat-label {
+  font-size: 12px; font-weight: 600; color: var(--text);
+}
+.etat-penalty {
+  font-size: 10px; color: var(--text3); font-family: var(--font-mono);
+}
+
+/* Éditeur état */
+.tftl-etat-editor {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.etat-editor-row {
+  display: flex; align-items: center; gap: 12px; cursor: pointer;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 6px; padding: 8px 12px;
+  transition: all 0.15s; user-select: none;
+}
+.etat-editor-row:hover { border-color: var(--border2); }
+.etat-box-editor {
+  width: 22px; height: 22px; border: 2px solid var(--border2);
+  border-radius: 3px; flex-shrink: 0; transition: all 0.15s;
+}
+.etat-box-editor.brise { border-color: var(--offc); }
+.etat-editor-label {
+  font-size: 13px; color: var(--text2); font-weight: 500;
+}
+.etat-editor-penalty {
+  font-size: 10px; color: var(--text3); font-family: var(--font-mono);
+}
+
+/* État coché dans l'éditeur — via JS sur le parent */
+.etat-editor-row.active .etat-box-editor {
+  background: rgba(224,92,92,0.15);
+  border-color: var(--offc);
+}
+.etat-editor-row.active .etat-box-editor::after {
+  content: '✕'; display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%;
+  font-size: 13px; font-weight: 700; color: var(--offc);
+  line-height: 1;
+}
+
+/* ── Chanson dans la preview ── */
+.tftl-chanson {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--text3); font-style: italic;
+  margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);
+}
+.tftl-chanson svg { flex-shrink: 0; color: var(--accent); }
+
+/* ── Carte roster — drapeaux d'état ── */
+.card-state-flags {
+  display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px;
+}
+.state-flag {
+  font-size: 10px; font-family: var(--font-mono); font-weight: 600;
+  padding: 2px 7px; border-radius: 3px;
+}
+.state-flag.contrarie { background: rgba(232,196,106,0.15); color: var(--accent); }
+.state-flag.effraye   { background: rgba(122,110,181,0.15); color: var(--sup); }
+.state-flag.epuise    { background: rgba(92,155,224,0.12);  color: var(--def); }
+.state-flag.blesse    { background: rgba(224,92,92,0.15);   color: var(--offc); }
+.state-flag.brise     {
+  background: rgba(224,92,92,0.2); color: var(--offc);
+  border: 1px solid rgba(224,92,92,0.4);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .tftl-attrs-grid { grid-template-columns: repeat(2, 1fr); }
+  .tftl-etat-grid  { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .tftl-attrs-grid { grid-template-columns: repeat(2, 1fr); }
+}
