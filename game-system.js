@@ -1,263 +1,309 @@
 // ══════════════════════════════════════════════════════════════
-// GAME SYSTEM — Fichier à personnaliser pour chaque jeu de rôle
-//
-// Ce fichier est le SEUL fichier métier à remplacer pour adapter
-// le template à un nouveau système de jeu.
-//
-// Contrat : les fonctions et constantes exportées ci-dessous
-// DOIVENT toutes être présentes et respecter leur signature.
-// Le reste du template (chroniques, documents, campagnes, auth...)
-// n'y touche pas.
+// GAME SYSTEM — Tales From the Loop
+// Système Year Zero Engine (Fria Ligan / Nils Hintze)
+// Adaptation française — Auroreville / La France des Années 80
 // ══════════════════════════════════════════════════════════════
 
 
 // ── 1. IDENTITÉ DU JEU ────────────────────────────────────────
-// Utilisé dans le <title>, le manifest, le logo topbar.
 
-const GAME_NAME       = 'Tales From the Loop';
-const GAME_SUBTITLE   = 'Gestionnaire de campagne'; // affiché sous le logo
+const GAME_NAME     = 'Tales From the Loop';
+const GAME_SUBTITLE = 'Les Mystères d\'Auroreville';
 
 
 // ── 2. ÉTAT INITIAL D'UN PERSONNAGE ──────────────────────────
-// Retourne un objet "vide" représentant un nouveau personnage.
-// Toutes les clés ici seront stockées en base dans la colonne `data` (JSONB).
 
 function freshState() {
   return {
     name:                 '',
-    subtitle:             '',
-    rank:                 5,
-    maturity:             'adulte',
-    energy:               1,
-    recovery:             1,
-    vigor:                1,
+    subtitle:             '',   // identité réelle / surnom
+    stereotype:           'geek',
+    age:                  12,
+    // Attributs (min 1, max 5 — répartis à hauteur de l'âge)
+    physique:             2,
+    technique:            2,
+    coeur:                2,
+    intelligence:         2,
+    // Compétences (max 12 points, 0–5)
+    skills: {
+      agilite:       0,
+      force:         0,
+      furtivite:     0,
+      analyse:       0,
+      bricolage:     0,
+      programmation: 0,
+      charisme:      0,
+      charme:        0,
+      reseau:        0,
+      comprehension: 0,
+      decouverte:    0,
+      empathie:      0,
+    },
+    // Métadonnées narratives
+    motivation:           '',
+    probleme:             '',
+    fierte:               '',
+    objet_fetiche:        '',
+    background:           '',
+    chanson_favorite:     '',
+    // Liens (tableau d'objets {label, detail})
+    liens:                [],
+    // État (cases cochées)
+    etat: {
+      contrarie: false,
+      effrayé:   false,
+      epuise:    false,
+      blesse:    false,
+      brise:     false,
+    },
+    // Technique standard
     is_public:            false,
     illustration_url:     '',
     illustration_position: 0,
-    xp_hero:              0,
-    xp_apt:               0,
     tags:                 [],
-    powers:               [],
-    aptitudes:            {},
-    traits:               [],
-    complications:        [],
-    background:           '',
   };
 }
 
 
 // ── 3. CONSTANTES DE RÈGLES ───────────────────────────────────
 
-// Points de héros disponibles par rang (index = rang, 0 inutilisé)
-const RANK_PTS = [0, 9, 17, 24, 32, 39, 47, 54, 62, 69, 77, 84];
+// Points de chance = 15 – âge
+function luckPoints(age) {
+  return Math.max(0, 15 - age);
+}
 
-// Points d'aptitudes disponibles par niveau de maturité
-const MATURITY_PTS = { adolescent: 12, adulte: 16, veteran: 20 };
+// Points d'attributs = âge (minimum 1, maximum 5 par attribut)
+function attrPoints(age) {
+  return age;
+}
+
+// Points de compétences = 10 (3 dans les clés du stéréotype, 1 dans les autres)
+const SKILL_POINTS_TOTAL = 10;
+
+// Stéréotypes et leurs compétences clés
+const STEREOTYPES = {
+  campagnard:  { key: 'campagnard',  skills: ['force', 'agilite', 'bricolage'] },
+  excentrique: { key: 'excentrique', skills: ['furtivite', 'decouverte', 'empathie'] },
+  geek:        { key: 'geek',        skills: ['analyse', 'programmation', 'comprehension'] },
+  intello:     { key: 'intello',     skills: ['analyse', 'decouverte', 'comprehension'] },
+  metalleux:   { key: 'metalleux',   skills: ['agilite', 'charme', 'empathie'] },
+  rebelle:     { key: 'rebelle',     skills: ['force', 'furtivite', 'charisme'] },
+  sportif:     { key: 'sportif',     skills: ['force', 'agilite', 'reseau'] },
+  star:        { key: 'star',        skills: ['reseau', 'charme', 'charisme'] },
+  combinard:   { key: 'combinard',   skills: ['programmation', 'charisme', 'reseau'] },
+  frimeur:     { key: 'frimeur',     skills: ['agilite', 'bricolage', 'charisme'] },
+  inventeur:   { key: 'inventeur',   skills: ['analyse', 'bricolage', 'programmation'] },
+  roliste:     { key: 'roliste',     skills: ['comprehension', 'decouverte', 'empathie'] },
+};
+
+// Lien entre compétence et attribut
+const SKILL_ATTR = {
+  agilite:       'physique',
+  force:         'physique',
+  furtivite:     'physique',
+  analyse:       'technique',
+  bricolage:     'technique',
+  programmation: 'technique',
+  charisme:      'coeur',
+  charme:        'coeur',
+  reseau:        'coeur',
+  comprehension: 'intelligence',
+  decouverte:    'intelligence',
+  empathie:      'intelligence',
+};
 
 
-// ── 4. LISTES DYNAMIQUES (dépendent de la langue active) ─────
-// Ces fonctions sont appelées après que i18n est initialisé.
+// ── 4. LISTES DYNAMIQUES ──────────────────────────────────────
 
-// Types de pouvoirs disponibles dans le formulaire
-function POWER_TYPES() {
+function STEREOTYPE_OPTIONS() {
   return [
-    { value: 'offc', label: t('power_type_offc'), desc: t('power_type_offc_desc') },
-    { value: 'offd', label: t('power_type_offd'), desc: t('power_type_offd_desc') },
-    { value: 'def',  label: t('power_type_def'),  desc: t('power_type_def_desc')  },
-    { value: 'mov',  label: t('power_type_mov'),  desc: t('power_type_mov_desc')  },
-    { value: 'sup',  label: t('power_type_sup'),  desc: t('power_type_sup_desc')  },
+    { value: 'campagnard',  label: t('stereotype_campagnard')  },
+    { value: 'excentrique', label: t('stereotype_excentrique') },
+    { value: 'geek',        label: t('stereotype_geek')        },
+    { value: 'intello',     label: t('stereotype_intello')     },
+    { value: 'metalleux',   label: t('stereotype_metalleux')   },
+    { value: 'rebelle',     label: t('stereotype_rebelle')     },
+    { value: 'sportif',     label: t('stereotype_sportif')     },
+    { value: 'star',        label: t('stereotype_star')        },
+    { value: 'combinard',   label: t('stereotype_combinard')   },
+    { value: 'frimeur',     label: t('stereotype_frimeur')     },
+    { value: 'inventeur',   label: t('stereotype_inventeur')   },
+    { value: 'roliste',     label: t('stereotype_roliste')     },
   ];
 }
 
-// Modificateurs de pouvoir
-function MOD_OPTIONS() {
+function SKILL_KEYS() {
   return [
-    { value: '0',  label: t('mod_none'), cost: 3 },
-    { value: '+1', label: '+1',          cost: 5 },
-    { value: '+2', label: '+2',          cost: 7 },
-    { value: '-1', label: '−1',          cost: 2 },
-    { value: '-2', label: '−2',          cost: 1 },
+    'agilite', 'force', 'furtivite',
+    'analyse', 'bricolage', 'programmation',
+    'charisme', 'charme', 'reseau',
+    'comprehension', 'decouverte', 'empathie',
   ];
 }
 
-// Noms des aptitudes affichés dans l'UI (traduits)
-function APTITUDES() {
-  return [
-    t('aptitude_art'),              t('aptitude_athletisme'),
-    t('aptitude_bagout'),           t('aptitude_filouterie'),
-    t('aptitude_medecine'),         t('aptitude_nature'),
-    t('aptitude_occultisme'),       t('aptitude_sciences_exactes'),
-    t('aptitude_sciences_humaines'),t('aptitude_technologie'),
-    t('aptitude_vehicules'),        t('aptitude_vigilance'),
-  ];
+function skillLabel(key) {
+  return t('skill_' + key);
 }
 
-// Clés stables en français pour la persistance en base de données.
-// ⚠️ NE PAS MODIFIER ces clés une fois des personnages créés,
-// elles sont stockées dans la colonne `data` JSONB.
-const APTITUDES_KEYS = [
-  'Art', 'Athlétisme', 'Bagout', 'Filouterie',
-  'Médecine', 'Nature', 'Occultisme', 'Sciences exactes',
-  'Sciences humaines', 'Technologie', 'Véhicules', 'Vigilance',
-];
+function attrLabel(key) {
+  return t('attr_' + key);
+}
 
 
 // ── 5. CALCUL DES POINTS ──────────────────────────────────────
 
-// Coût en points de héros des attributs
-function calcAttrCost(state) {
-  return (state.energy * 2) + (state.recovery * 3) + state.vigor;
+function totalAttrUsed(state) {
+  return (state.physique || 0) + (state.technique || 0)
+       + (state.coeur || 0)   + (state.intelligence || 0);
 }
 
-// Coût d'un pouvoir individuel
-function powerCost(p) {
-  const m = { '+1': 2, '+2': 4, '-1': -1, '-2': -2 };
-  return Math.max(1, 3 + (m[p.mod] || 0));
+function totalSkillsUsed(state) {
+  return Object.values(state.skills || {}).reduce((s, v) => s + v, 0);
 }
 
-// Coût total de tous les pouvoirs
-function calcPowersCost(state) {
-  return (state.powers || []).reduce((s, p) => s + powerCost(p), 0);
-}
-
-// Coût total du personnage (attributs + pouvoirs)
-function totalCost(state) {
-  return calcAttrCost(state) + calcPowersCost(state);
-}
-
-// Budget max en points de héros selon le rang + XP
-function maxPts(state) {
-  return (RANK_PTS[Math.min(state.rank, 11)] || 39) + (state.xp_hero || 0);
-}
-
-// Coût total en points d'aptitudes (aptitudes + traits)
-function calcAptPts(state) {
-  return Object.values(state.aptitudes || {}).reduce((s, v) => s + v, 0)
-       + (state.traits || []).reduce((s, tr) => s + (tr.bonus || 1), 0);
-}
-
-// Budget max en points d'aptitudes selon la maturité + XP
-function maxAptPts(state) {
-  return (MATURITY_PTS[state.maturity || 'adulte'] || 16) + (state.xp_apt || 0);
-}
+// Stubs requis par editor.js (ne sont plus utilisés mais doivent exister)
+function totalCost(state)    { return totalAttrUsed(state); }
+function maxPts(state)       { return attrPoints(state.age || 12); }
+function calcAptPts(state)   { return totalSkillsUsed(state); }
+function maxAptPts(state)    { return SKILL_POINTS_TOTAL; }
+function powerCost(p)        { return 0; }
+function POWER_TYPES()       { return []; }
+function MOD_OPTIONS()       { return []; }
+function APTITUDES()         { return []; }
+const APTITUDES_KEYS         = [];
 
 
 // ── 6. RENDU CARTE ROSTER ─────────────────────────────────────
-// Retourne le HTML interne de la carte personnage dans la liste.
-// Appelé par cardHTML() dans scripts.js.
-// Paramètre : `c` = objet personnage complet.
 
 function renderCharCardBody(c) {
-  const pwrTags = (c.powers || []).map(p => {
-    const pt = POWER_TYPES().find(x => x.value === p.type);
-    const style = POWER_TYPE_STYLES[p.type] || '';
-    return `<span class="card-power-tag" style="${style}">${pt?.label || p.type}</span>`;
-  }).join('');
+  const stereo = c.stereotype
+    ? STEREOTYPE_OPTIONS().find(x => x.value === c.stereotype)?.label || c.stereotype
+    : '—';
+  const luck = luckPoints(c.age || 12);
+  const stateFlags = _cardStateFlags(c);
 
   return `
     <div class="card-name">${esc(c.name) || '—'}</div>
-    <div class="card-sub">${esc(c.subtitle) || ''}</div>
-    <div class="card-rank">${t('card_rank')}${c.rank}</div>
+    <div class="card-sub">${esc(stereo)} · ${c.age || '?'} ${t('card_age_suffix')}</div>
+    <div class="card-rank">${t('card_luck_label')}${luck}</div>
     <div class="card-attrs">
       <div class="card-attr e">
-        <div class="val">${c.energy || 1}</div>
-        <div class="lbl">${t('card_attr_energy')}</div>
+        <div class="val">${c.physique || 1}</div>
+        <div class="lbl">${t('attr_physique_short')}</div>
       </div>
       <div class="card-attr r">
-        <div class="val">${c.recovery || 1}</div>
-        <div class="lbl">${t('card_attr_recovery')}</div>
+        <div class="val">${c.technique || 1}</div>
+        <div class="lbl">${t('attr_technique_short')}</div>
       </div>
       <div class="card-attr v">
-        <div class="val">${c.vigor || 1}</div>
-        <div class="lbl">${t('card_attr_vigor')}</div>
+        <div class="val">${c.coeur || 1}</div>
+        <div class="lbl">${t('attr_coeur_short')}</div>
+      </div>
+      <div class="card-attr s">
+        <div class="val">${c.intelligence || 1}</div>
+        <div class="lbl">${t('attr_intelligence_short')}</div>
       </div>
     </div>
-    <div class="card-powers">${pwrTags}</div>
+    ${stateFlags}
   `;
 }
 
-// Styles CSS inline pour les badges de type de pouvoir sur les cartes
-const POWER_TYPE_STYLES = {
-  offc: 'background:rgba(224,92,92,0.15);color:#e05c5c;',
-  offd: 'background:rgba(224,122,58,0.15);color:#e07a3a;',
-  def:  'background:rgba(92,155,224,0.15);color:#5c9be0;',
-  mov:  'background:rgba(92,191,122,0.15);color:#5cbf7a;',
-  sup:  'background:rgba(155,125,232,0.15);color:#9b7de8;',
-};
+function _cardStateFlags(c) {
+  if (!c.etat) return '';
+  const active = [];
+  if (c.etat.brise)    active.push(`<span class="state-flag brise">${t('etat_brise')}</span>`);
+  else if (c.etat.blesse)    active.push(`<span class="state-flag blesse">${t('etat_blesse')}</span>`);
+  if (c.etat.effrayé)  active.push(`<span class="state-flag effraye">${t('etat_effraye')}</span>`);
+  if (c.etat.epuise)   active.push(`<span class="state-flag epuise">${t('etat_epuise')}</span>`);
+  if (c.etat.contrarie)active.push(`<span class="state-flag contrarie">${t('etat_contrarie')}</span>`);
+  return active.length
+    ? `<div class="card-state-flags">${active.join('')}</div>`
+    : '';
+}
 
 
 // ── 7. RENDU PREVIEW / VUE PARTAGÉE ──────────────────────────
-// Retourne le HTML complet du personnage pour la preview éditeur
-// et la vue lecture seule (showSharedChar).
-// Paramètre : `data` = objet personnage complet.
 
 function renderCharSheet(data) {
-  const used    = totalCost(data);
-  const max     = maxPts(data);
-  const ptColor = used > max ? 'var(--offc)' : used === max ? 'var(--accent)' : 'var(--mov)';
+  const stereo = data.stereotype
+    ? STEREOTYPE_OPTIONS().find(x => x.value === data.stereotype)?.label || data.stereotype
+    : '—';
+  const luck = luckPoints(data.age || 12);
+  const keySkills = STEREOTYPES[data.stereotype]?.skills || [];
 
-  const powHtml = (data.powers || []).filter(p => p.name).map(p => {
-    const pt     = POWER_TYPES().find(x => x.value === p.type);
-    const modTag = p.mod && p.mod !== '0'
-      ? `<span class="pow-mod-tag">${p.mod}</span>` : '';
-    return `<div class="preview-power">
-      <span class="pow-badge ${p.type}">${pt?.label || p.type}</span>
-      <div class="pow-body">
-        <div class="pow-name">${esc(p.name)}${modTag}</div>
-        ${p.desc ? `<div class="pow-desc">${esc(p.desc)}</div>` : ''}
-      </div>
-      <div class="pow-cost">${powerCost(p)} pts</div>
-    </div>`;
-  }).join('');
-
-  const aptEntries = Object.entries(data.aptitudes || {}).filter(([, v]) => v > 0);
-  const aptUsed    = calcAptPts(data);
-  const aptMax     = maxAptPts(data);
-  const aptColor   = aptUsed > aptMax ? 'var(--offc)' : aptUsed === aptMax ? 'var(--accent)' : 'var(--mov)';
-
-  const aptHtml = aptEntries.length ? `
-    <div class="preview-section-title">
-      ${t('preview_section_aptitudes')}
-      <span style="color:${aptColor};font-family:var(--font-mono);font-size:10px;margin-left:4px">
-        ${aptUsed} / ${aptMax} pts
+  // ── Attributs
+  const attrsHtml = `
+    <div class="preview-section-title">${t('preview_section_attrs')}
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);margin-left:4px">
+        ${totalAttrUsed(data)} / ${attrPoints(data.age||12)} pts
       </span>
     </div>
-    <div class="apt-preview-grid">
-      ${aptEntries.map(([frKey, val]) => {
-        const idx   = APTITUDES_KEYS.indexOf(frKey);
-        const label = idx >= 0 ? APTITUDES()[idx] : frKey;
-        return `<div class="apt-preview-row">
-          <span class="name">${label}</span>
-          <span class="rank-num">${val}</span>
+    <div class="tftl-attrs-grid">
+      ${_attrBlock('physique',     data.physique,     'e')}
+      ${_attrBlock('technique',    data.technique,    'r')}
+      ${_attrBlock('coeur',        data.coeur,        'v')}
+      ${_attrBlock('intelligence', data.intelligence, 's')}
+    </div>`;
+
+  // ── Compétences (seulement celles > 0)
+  const activeSkills = SKILL_KEYS().filter(k => (data.skills?.[k] || 0) > 0);
+  const skillsHtml = activeSkills.length ? `
+    <div class="preview-section-title">${t('preview_section_skills')}
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);margin-left:4px">
+        ${totalSkillsUsed(data)} / ${SKILL_POINTS_TOTAL} pts
+      </span>
+    </div>
+    <div class="tftl-skills-grid">
+      ${activeSkills.map(k => _skillRow(k, data.skills[k], keySkills.includes(k))).join('')}
+    </div>` : '';
+
+  // ── Éléments narratifs
+  const narratifHtml = [
+    data.motivation    && _narratifBlock(t('preview_motivation'),    data.motivation),
+    data.probleme      && _narratifBlock(t('preview_probleme'),      data.probleme),
+    data.fierte        && _narratifBlock(t('preview_fierte'),        data.fierte),
+    data.objet_fetiche && _narratifBlock(t('preview_objet_fetiche'), data.objet_fetiche, true),
+  ].filter(Boolean).join('');
+
+  // ── Liens
+  const liensData = (data.liens || []).filter(l => l && (typeof l === 'object' ? l.label : l));
+  const liensHtml = liensData.length ? `
+    <div class="preview-section-title">${t('preview_liens')}</div>
+    <div class="tftl-liens-list">
+      ${liensData.map(l => {
+        const label  = typeof l === 'object' ? l.label  : l;
+        const detail = typeof l === 'object' ? l.detail : '';
+        return `<div class="tftl-lien-chip">
+          <div class="lien-label">${esc(label)}</div>
+          ${detail ? `<div class="lien-detail">${esc(detail)}</div>` : ''}
         </div>`;
       }).join('')}
     </div>` : '';
 
-  const traitsHtml = (data.traits || []).filter(tr => tr.name).length ? `
-    <div class="preview-section-title">${t('preview_section_traits')}</div>
-    <div class="trait-preview">
-      ${(data.traits || []).filter(tr => tr.name).map(tr =>
-        `<div class="trait-chip">${esc(tr.name)}<span class="bonus">+${tr.bonus}</span></div>`
-      ).join('')}
-    </div>` : '';
+  // ── État
+  const etat = data.etat || {};
+  const etatHtml = `
+    <div class="preview-section-title">${t('preview_etat')}</div>
+    <div class="tftl-etat-grid">
+      ${_etatCheck('contrarie', etat.contrarie, t('etat_contrarie'), '-1')}
+      ${_etatCheck('effraye',   etat.effrayé,   t('etat_effraye'),  '-1')}
+      ${_etatCheck('epuise',    etat.epuise,    t('etat_epuise'),   '-1')}
+      ${_etatCheck('blesse',    etat.blesse,    t('etat_blesse'),   '-1')}
+      ${_etatCheck('brise',     etat.brise,     t('etat_brise'),    t('etat_brise_detail'))}
+    </div>`;
 
-  const complList = (data.complications || []).filter(c => typeof c === 'object' ? c.label : c);
-  const complHtml = complList.length ? `
-    <div class="preview-section-title">${t('preview_section_complications')}</div>
-    <div class="compl-preview">
-      ${complList.map(c => {
-        const label  = typeof c === 'object' ? c.label  : c;
-        const detail = typeof c === 'object' ? c.detail : '';
-        return `<div class="compl-chip">
-          ${esc(label)}
-          ${detail ? `<div class="compl-detail">${esc(detail)}</div>` : ''}
-        </div>`;
-      }).join('')}
-    </div>` : '';
-
+  // ── Background + chanson
   const bgHtml = data.background ? `
-    <div class="preview-section-title">${t('preview_section_background')}</div>
+    <div class="preview-section-title">${t('preview_background')}</div>
     <div class="background-preview">${esc(data.background)}</div>` : '';
+
+  const chansonHtml = data.chanson_favorite ? `
+    <div class="tftl-chanson">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="13" height="13">
+        <path d="M9 3v7.5a2 2 0 11-1-1.73V4.5L6 5V3l3-1v1z"/>
+      </svg>
+      ${esc(data.chanson_favorite)}
+    </div>` : '';
 
   return `
     ${data.illustration_url
@@ -269,267 +315,281 @@ function renderCharSheet(data) {
     <div class="preview-header">
       <div class="preview-name">${esc(data.name) || '—'}</div>
       ${data.subtitle ? `<div class="preview-sub">${esc(data.subtitle)}</div>` : ''}
-      <div class="preview-rank-badge">${t('rank_label')}${data.rank}</div>
-    </div>
-
-    <div class="preview-section-title">
-      ${t('preview_section_attrs')}
-      <span style="color:${ptColor};font-family:var(--font-mono);font-size:10px;margin-left:4px">
-        ${used} / ${max} pts
-      </span>
-    </div>
-    <div class="preview-attrs">
-      <div class="preview-attr e">
-        <div class="val">${data.energy}</div>
-        <div class="lbl">${t('preview_attr_energy')}</div>
-        <div class="cost">${data.energy * 2} ${t('preview_attr_cost_energy')}</div>
-        <div class="pips">${pipRow(data.energy, 'e', 10)}</div>
-      </div>
-      <div class="preview-attr r">
-        <div class="val">${data.recovery}</div>
-        <div class="lbl">${t('preview_attr_recovery')}</div>
-        <div class="cost">${data.recovery * 3} ${t('preview_attr_cost_recovery')}</div>
-        <div class="pips">${pipRow(data.recovery, 'r', 10)}</div>
-      </div>
-      <div class="preview-attr v">
-        <div class="val">${data.vigor}</div>
-        <div class="lbl">${t('preview_attr_vigor')}</div>
-        <div class="cost">${data.vigor} ${t('preview_attr_cost_vigor')}</div>
-        <div class="pips">${pipRow(data.vigor, 'v', 10)}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px">
+        <div class="preview-rank-badge">${esc(stereo)}</div>
+        <div class="tftl-age-badge">${data.age || '?'} ${t('card_age_suffix')}</div>
+        <div class="tftl-luck-badge">
+          <svg viewBox="0 0 16 16" fill="currentColor" width="10" height="10">
+            <path d="M8 1l1.8 3.6L14 5.3l-3 2.9.7 4.1L8 10.2l-3.7 2.1.7-4.1-3-2.9 4.2-.7z"/>
+          </svg>
+          ${luck} ${t('luck_label')}
+        </div>
       </div>
     </div>
 
-    ${(data.powers || []).filter(p => p.name).length
-      ? `<div class="preview-section-title">${t('preview_section_powers')}</div>${powHtml}`
-      : ''}
-    ${aptHtml}${traitsHtml}${complHtml}${bgHtml}
+    ${attrsHtml}
+    ${skillsHtml}
+    ${narratifHtml ? `<div class="preview-section-title">${t('preview_section_narratif')}</div>${narratifHtml}` : ''}
+    ${liensHtml}
+    ${etatHtml}
+    ${bgHtml}
+    ${chansonHtml}
   `;
 }
 
+function _attrBlock(key, val, cls) {
+  const v = val || 1;
+  const dots = Array.from({length: 5}, (_, i) =>
+    `<div class="pip ${i < v ? cls : 'empty'}"></div>`
+  ).join('');
+  return `
+    <div class="tftl-attr-block ${cls}">
+      <div class="val">${v}</div>
+      <div class="lbl">${t('attr_' + key)}</div>
+      <div class="pips">${dots}</div>
+    </div>`;
+}
 
-// ── 8. CLÉS i18n SPÉCIFIQUES AU JEU ──────────────────────────
-// Ces entrées s'ajoutent aux clés génériques de i18n.js.
-// Elles sont mergées au chargement dans TRANSLATIONS.
+function _skillRow(key, val, isKey) {
+  const attr = SKILL_ATTR[key];
+  const total = val; // juste la compétence, l'attribut s'ajoute au jet
+  const dots = Array.from({length: 5}, (_, i) =>
+    `<div class="skill-dot ${i < total ? '' : 'empty'}"></div>`
+  ).join('');
+  return `
+    <div class="tftl-skill-row ${isKey ? 'key-skill' : ''}">
+      <div class="skill-name">
+        ${isKey ? '<span class="key-marker">★</span>' : ''}
+        ${skillLabel(key)}
+        <span class="skill-attr-tag">${t('attr_' + attr + '_short')}</span>
+      </div>
+      <div class="skill-dots">${dots}</div>
+      <div class="skill-val">${val}</div>
+    </div>`;
+}
+
+function _narratifBlock(label, content, isFetiche = false) {
+  return `
+    <div class="tftl-narratif-block ${isFetiche ? 'fetiche' : ''}">
+      <div class="narratif-label">${label}</div>
+      <div class="narratif-content">${esc(content)}</div>
+    </div>`;
+}
+
+function _etatCheck(key, checked, label, penalty) {
+  return `
+    <div class="tftl-etat-item ${checked ? 'checked' : ''}">
+      <div class="etat-box">${checked ? '✕' : ''}</div>
+      <div class="etat-info">
+        <div class="etat-label">${label}</div>
+        <div class="etat-penalty">${penalty}</div>
+      </div>
+    </div>`;
+}
+
+
+// ── 8. CLÉS i18n SPÉCIFIQUES ──────────────────────────────────
 
 const GAME_I18N = {
   fr: {
-    // Rangs
-    rank_1:  'Rang 1 — Civils (9 pts)',
-    rank_2:  'Rang 2 — Flics & Voyous (17 pts)',
-    rank_3:  'Rang 3 — Agents spéciaux (24 pts)',
-    rank_4:  'Rang 4 — Supers mineurs (32 pts)',
-    rank_5:  'Rang 5 — Supers débutants (39 pts)',
-    rank_6:  'Rang 6 — Supers compétents (47 pts)',
-    rank_7:  'Rang 7 — Supers reconnus (54 pts)',
-    rank_8:  'Rang 8 — Supers puissants (62 pts)',
-    rank_9:  'Rang 9 — Supers majeurs (69 pts)',
-    rank_10: 'Rang 10 — Plus puissants sur Terre (77 pts)',
-    rank_11: 'Rang 11+ — Cosmiques (84+ pts)',
-    rank_label: 'Rang ',
+    // Stéréotypes
+    stereotype_campagnard:  'Campagnard',
+    stereotype_excentrique: 'Excentrique',
+    stereotype_geek:        'Geek',
+    stereotype_intello:     'Intello',
+    stereotype_metalleux:   'Métalleux',
+    stereotype_rebelle:     'Rebelle',
+    stereotype_sportif:     'Sportif',
+    stereotype_star:        'Star de l\'école',
+    stereotype_combinard:   'Combinard',
+    stereotype_frimeur:     'Frimeur',
+    stereotype_inventeur:   'Inventeur',
+    stereotype_roliste:     'Rôliste',
 
-    // Maturités
-    maturity_adolescent: 'Adolescent (12 pts d\'aptitudes)',
-    maturity_adulte:     'Adulte (16 pts d\'aptitudes)',
-    maturity_veteran:    'Vétéran (20 pts d\'aptitudes)',
+    // Attributs
+    attr_physique:           'Physique',
+    attr_physique_short:     'PHY',
+    attr_technique:          'Technique',
+    attr_technique_short:    'TEC',
+    attr_coeur:              'Cœur',
+    attr_coeur_short:        'CŒU',
+    attr_intelligence:       'Intelligence',
+    attr_intelligence_short: 'INT',
 
-    // Types de pouvoir
-    power_type_offc:      'Off-C',
-    power_type_offd:      'Off-D',
-    power_type_def:       'Def',
-    power_type_mov:       'Mov',
-    power_type_sup:       'Sup',
-    power_type_offc_desc: 'Offensif contact',
-    power_type_offd_desc: 'Offensif distance',
-    power_type_def_desc:  'Défensif',
-    power_type_mov_desc:  'Mouvement',
-    power_type_sup_desc:  'Support',
+    // Compétences
+    skill_agilite:       'Agilité',
+    skill_force:         'Force',
+    skill_furtivite:     'Furtivité',
+    skill_analyse:       'Analyse',
+    skill_bricolage:     'Bricolage',
+    skill_programmation: 'Programmation',
+    skill_charisme:      'Charisme',
+    skill_charme:        'Charme',
+    skill_reseau:        'Réseau',
+    skill_comprehension: 'Compréhension',
+    skill_decouverte:    'Découverte',
+    skill_empathie:      'Empathie',
 
-    // Modificateurs
-    mod_none: 'Aucun',
+    // Carte
+    card_age_suffix:   'ans',
+    card_luck_label:   '★ ',
+    luck_label:        'pts de chance',
 
-    // Aptitudes
-    aptitude_art:              'Art',
-    aptitude_athletisme:       'Athlétisme',
-    aptitude_bagout:           'Bagout',
-    aptitude_filouterie:       'Filouterie',
-    aptitude_medecine:         'Médecine',
-    aptitude_nature:           'Nature',
-    aptitude_occultisme:       'Occultisme',
-    aptitude_sciences_exactes: 'Sciences exactes',
-    aptitude_sciences_humaines:'Sciences humaines',
-    aptitude_technologie:      'Technologie',
-    aptitude_vehicules:        'Véhicules',
-    aptitude_vigilance:        'Vigilance',
-
-    // Attributs dans la preview
-    preview_attr_energy:       'Énergie',
-    preview_attr_recovery:     'Récupération',
-    preview_attr_vigor:        'Vigueur',
-    preview_attr_cost_energy:  'pts de héros',
-    preview_attr_cost_recovery:'pts de héros',
-    preview_attr_cost_vigor:   'pts de héros',
+    // Badges
+    tftl_age_badge:  'ans',
+    tftl_luck_badge: 'Chance',
 
     // Sections preview
-    preview_section_attrs:        'Attributs',
-    preview_section_powers:       'Pouvoirs',
-    preview_section_aptitudes:    'Aptitudes',
-    preview_section_traits:       'Traits',
-    preview_section_complications:'Complications',
-    preview_section_background:   'Background',
+    preview_section_attrs:    'Attributs',
+    preview_section_skills:   'Compétences',
+    preview_section_narratif: 'Profil',
+    preview_motivation:       'Motivation',
+    preview_probleme:         'Problème',
+    preview_fierte:           'Fierté',
+    preview_objet_fetiche:    'Objet fétiche (+2 dés)',
+    preview_liens:            'Liens',
+    preview_etat:             'État',
+    preview_background:       'Background',
 
-    // Carte roster
-    card_rank:          'Rang ',
-    card_attr_energy:   'Énergie',
-    card_attr_recovery: 'Récup.',
-    card_attr_vigor:    'Vigueur',
+    // État
+    etat_contrarie:       'Contrarié',
+    etat_effraye:         'Effrayé',
+    etat_epuise:          'Épuisé',
+    etat_blesse:          'Blessé',
+    etat_brise:           'Brisé',
+    etat_brise_detail:    'Échec automatique',
 
-    // Éditeur — sections
-    editor_section_attrs:         'Attributs',
-    editor_attr_energy:           'Énergie',
-    editor_attr_energy_cost:      '(2 pts/+1)',
-    editor_attr_recovery:         'Récupération',
-    editor_attr_recovery_cost:    '(3 pts/+1)',
-    editor_attr_vigor:            'Vigueur',
-    editor_attr_vigor_cost:       '(1 pt/+1)',
-    editor_pts_hero:              'Points de héros',
-    editor_section_powers:        'Pouvoirs',
-    editor_power_name_ph:         'Nom du pouvoir',
-    editor_power_desc_ph:         'Description courte (optionnelle)',
-    editor_add_power:             '+ Ajouter un pouvoir',
-    editor_section_aptitudes:     'Aptitudes',
-    editor_pts_aptitudes:         'Points d\'aptitudes',
-    editor_section_traits:        'Traits',
-    editor_trait_name_ph:         'Nom du trait',
-    editor_add_trait:             '+ Ajouter un trait',
-    editor_section_complications: 'Complications',
-    editor_complications_max:     '(max 5)',
-    editor_complication_name_ph:  'Nom de la complication',
-    editor_complication_detail_ph:'Détails (optionnel)',
-    editor_add_complication:      '+ Ajouter une complication',
-    editor_section_background:    'Background',
-    editor_background_ph:         'Histoire du personnage, origines, motivations…',
-    editor_section_xp:            'Expérience',
-    editor_xp_hero_label:         'Pts de héros bonus',
-    editor_xp_hero_detail:        'S\'ajoutent au budget du rang',
-    editor_xp_apt_label:          'Pts d\'aptitudes bonus',
-    editor_xp_apt_detail:         'S\'ajoutent au budget de maturité',
-    editor_field_rank:            'Rang de puissance initial',
-    editor_field_maturity:        'Maturité initiale',
+    // Éditeur
+    editor_field_age:              'Âge',
+    editor_field_age_detail:       '(10–15 ans)',
+    editor_field_stereotype:       'Stéréotype',
+    editor_field_subtitle:         'Surnom / identité réelle',
+    editor_field_subtitle_ph:      'Ex : Martine, dite "la Sauterelle"',
+    editor_field_name_ph:          'Ex : Thomas Bernard',
+    editor_section_attrs:          'Attributs',
+    editor_attrs_detail:           'Répartissez un total égal à votre âge (min 1, max 5)',
+    editor_pts_hero:               'Points d\'attributs',
+    editor_section_skills:         'Compétences',
+    editor_pts_aptitudes:          'Points de compétences',
+    editor_skills_detail:          '10 points à répartir (max 3 dans les clés du stéréotype)',
+    editor_key_skills_label:       'Compétences clés',
+    editor_section_narratif:       'Profil',
+    editor_motivation_label:       'Motivation',
+    editor_motivation_ph:          'Pourquoi s\'exposer aux mystères ?',
+    editor_probleme_label:         'Problème',
+    editor_probleme_ph:            'Quel problème personnel compli-que la vie ?',
+    editor_fierte_label:           'Fierté',
+    editor_fierte_ph:              'Ce qui rend le personnage fort (1× par mystère : réussite auto)',
+    editor_objet_fetiche_label:    'Objet fétiche',
+    editor_objet_fetiche_ph:       'Ex : une vieille radio CB (+2 dés quand utilisé)',
+    editor_chanson_label:          'Chanson favorite',
+    editor_chanson_ph:             'Ex : "It\'s a Kind of Magic" — Queen',
+    editor_section_etat:           'État',
+    editor_section_liens:          'Liens',
+    editor_liens_add:              '+ Ajouter un lien',
+    editor_lien_label_ph:          'Nom ou relation (ex: Sophie, ma meilleure amie)',
+    editor_lien_detail_ph:         'Détail du lien (optionnel)',
+    editor_section_background:     'Background',
+    editor_background_ph:          'Histoire, origines, vie à Auroreville…',
 
     // Alertes
-    alert_char_no_name: 'Veuillez donner un nom au personnage.',
+    alert_char_no_name:  'Donnez un nom à cet enfant.',
   },
   en: {
-    // Ranks
-    rank_1:  'Rank 1 — Civilians (9 pts)',
-    rank_2:  'Rank 2 — Cops & Thugs (17 pts)',
-    rank_3:  'Rank 3 — Special Agents (24 pts)',
-    rank_4:  'Rank 4 — Minor Supers (32 pts)',
-    rank_5:  'Rank 5 — Rookie Supers (39 pts)',
-    rank_6:  'Rank 6 — Capable Supers (47 pts)',
-    rank_7:  'Rank 7 — Renowned Supers (54 pts)',
-    rank_8:  'Rank 8 — Powerful Supers (62 pts)',
-    rank_9:  'Rank 9 — Major Supers (69 pts)',
-    rank_10: 'Rank 10 — Earth\'s Mightiest (77 pts)',
-    rank_11: 'Rank 11+ — Cosmic (84+ pts)',
-    rank_label: 'Rank ',
+    stereotype_campagnard:  'Country Kid',
+    stereotype_excentrique: 'Weirdo',
+    stereotype_geek:        'Geek',
+    stereotype_intello:     'Bookworm',
+    stereotype_metalleux:   'Headbanger',
+    stereotype_rebelle:     'Hooligan',
+    stereotype_sportif:     'Jock',
+    stereotype_star:        'Popular Kid',
+    stereotype_combinard:   'Schemer',
+    stereotype_frimeur:     'Troublemaker',
+    stereotype_inventeur:   'Inventor',
+    stereotype_roliste:     'Roleplayer',
 
-    // Maturities
-    maturity_adolescent: 'Teenager (12 aptitude pts)',
-    maturity_adulte:     'Adult (16 aptitude pts)',
-    maturity_veteran:    'Veteran (20 aptitude pts)',
+    attr_physique:           'Body',
+    attr_physique_short:     'BOD',
+    attr_technique:          'Tech',
+    attr_technique_short:    'TEC',
+    attr_coeur:              'Heart',
+    attr_coeur_short:        'HRT',
+    attr_intelligence:       'Mind',
+    attr_intelligence_short: 'MND',
 
-    // Power types
-    power_type_offc:      'Off-C',
-    power_type_offd:      'Off-D',
-    power_type_def:       'Def',
-    power_type_mov:       'Mov',
-    power_type_sup:       'Sup',
-    power_type_offc_desc: 'Melee offensive',
-    power_type_offd_desc: 'Ranged offensive',
-    power_type_def_desc:  'Defensive',
-    power_type_mov_desc:  'Movement',
-    power_type_sup_desc:  'Support',
+    skill_agilite:       'Agility',
+    skill_force:         'Strength',
+    skill_furtivite:     'Sneak',
+    skill_analyse:       'Calculate',
+    skill_bricolage:     'Tinker',
+    skill_programmation: 'Program',
+    skill_charisme:      'Lead',
+    skill_charme:        'Charm',
+    skill_reseau:        'Contact',
+    skill_comprehension: 'Comprehend',
+    skill_decouverte:    'Investigate',
+    skill_empathie:      'Empathize',
 
-    // Modifiers
-    mod_none: 'None',
+    card_age_suffix:   'y.o.',
+    card_luck_label:   '★ ',
+    luck_label:        'luck pts',
 
-    // Aptitudes
-    aptitude_art:              'Art',
-    aptitude_athletisme:       'Athletics',
-    aptitude_bagout:           'Persuasion',
-    aptitude_filouterie:       'Trickery',
-    aptitude_medecine:         'Medicine',
-    aptitude_nature:           'Nature',
-    aptitude_occultisme:       'Occultism',
-    aptitude_sciences_exactes: 'Hard Sciences',
-    aptitude_sciences_humaines:'Social Sciences',
-    aptitude_technologie:      'Technology',
-    aptitude_vehicules:        'Vehicles',
-    aptitude_vigilance:        'Vigilance',
+    preview_section_attrs:    'Attributes',
+    preview_section_skills:   'Skills',
+    preview_section_narratif: 'Profile',
+    preview_motivation:       'Drive',
+    preview_probleme:         'Problem',
+    preview_fierte:           'Pride',
+    preview_objet_fetiche:    'Signature Item (+2 dice)',
+    preview_liens:            'Relationships',
+    preview_etat:             'Conditions',
+    preview_background:       'Background',
 
-    // Attributes in preview
-    preview_attr_energy:       'Energy',
-    preview_attr_recovery:     'Recovery',
-    preview_attr_vigor:        'Toughness',
-    preview_attr_cost_energy:  'hero pts',
-    preview_attr_cost_recovery:'hero pts',
-    preview_attr_cost_vigor:   'hero pts',
+    etat_contrarie:       'Upset',
+    etat_effraye:         'Scared',
+    etat_epuise:          'Exhausted',
+    etat_blesse:          'Injured',
+    etat_brise:           'Broken',
+    etat_brise_detail:    'Automatic failure',
 
-    // Preview sections
-    preview_section_attrs:        'Attributes',
-    preview_section_powers:       'Powers',
-    preview_section_aptitudes:    'Skills',
-    preview_section_traits:       'Traits',
-    preview_section_complications:'Complications',
-    preview_section_background:   'Background',
+    editor_field_age:              'Age',
+    editor_field_age_detail:       '(10–15)',
+    editor_field_stereotype:       'Archetype',
+    editor_field_subtitle:         'Nickname / real identity',
+    editor_field_subtitle_ph:      'Ex: Tom "The Brain" Bernard',
+    editor_field_name_ph:          'Ex: Thomas Bernard',
+    editor_section_attrs:          'Attributes',
+    editor_attrs_detail:           'Spend points equal to your age (min 1, max 5)',
+    editor_pts_hero:               'Attribute points',
+    editor_section_skills:         'Skills',
+    editor_pts_aptitudes:          'Skill points',
+    editor_skills_detail:          '10 points to spend (up to 3 in key skills)',
+    editor_key_skills_label:       'Key skills',
+    editor_section_narratif:       'Profile',
+    editor_motivation_label:       'Drive',
+    editor_motivation_ph:          'Why face the mysteries?',
+    editor_probleme_label:         'Problem',
+    editor_probleme_ph:            'What personal issue complicates life?',
+    editor_fierte_label:           'Pride',
+    editor_fierte_ph:              'What makes this kid special (1× per mystery: auto success)',
+    editor_objet_fetiche_label:    'Signature Item',
+    editor_objet_fetiche_ph:       'Ex: an old CB radio (+2 dice when used)',
+    editor_chanson_label:          'Favourite Song',
+    editor_chanson_ph:             'Ex: "It\'s a Kind of Magic" — Queen',
+    editor_section_etat:           'Conditions',
+    editor_section_liens:          'Relationships',
+    editor_liens_add:              '+ Add relationship',
+    editor_lien_label_ph:          'Name or relation (e.g. Sophie, my best friend)',
+    editor_lien_detail_ph:         'Relationship detail (optional)',
+    editor_section_background:     'Background',
+    editor_background_ph:          'Story, origins, life in town…',
 
-    // Roster card
-    card_rank:          'Rank ',
-    card_attr_energy:   'Energy',
-    card_attr_recovery: 'Recov.',
-    card_attr_vigor:    'Vigor',
-
-    // Editor sections
-    editor_section_attrs:         'Attributes',
-    editor_attr_energy:           'Energy',
-    editor_attr_energy_cost:      '(2 pts/+1)',
-    editor_attr_recovery:         'Recovery',
-    editor_attr_recovery_cost:    '(3 pts/+1)',
-    editor_attr_vigor:            'Vigor',
-    editor_attr_vigor_cost:       '(1 pt/+1)',
-    editor_pts_hero:              'Hero points',
-    editor_section_powers:        'Powers',
-    editor_power_name_ph:         'Power name',
-    editor_power_desc_ph:         'Short description (optional)',
-    editor_add_power:             '+ Add a power',
-    editor_section_aptitudes:     'Aptitudes',
-    editor_pts_aptitudes:         'Aptitude points',
-    editor_section_traits:        'Traits',
-    editor_trait_name_ph:         'Trait name',
-    editor_add_trait:             '+ Add a trait',
-    editor_section_complications: 'Complications',
-    editor_complications_max:     '(max 5)',
-    editor_complication_name_ph:  'Complication name',
-    editor_complication_detail_ph:'Details (optional)',
-    editor_add_complication:      '+ Add a complication',
-    editor_section_background:    'Background',
-    editor_background_ph:         'Character history, origins, motivations…',
-    editor_section_xp:            'Experience',
-    editor_xp_hero_label:         'Bonus hero pts',
-    editor_xp_hero_detail:        'Added to rank budget',
-    editor_xp_apt_label:          'Bonus aptitude pts',
-    editor_xp_apt_detail:         'Added to maturity budget',
-    editor_field_rank:            'Starting power rank',
-    editor_field_maturity:        'Starting maturity',
-
-    // Alerts
-    alert_char_no_name: 'Please give the character a name.',
+    alert_char_no_name:  'Please give this kid a name.',
   },
 };
 
-// ── Merge automatique dans TRANSLATIONS au chargement ─────────
-// (ce bloc s'exécute après i18n.js)
+// Merge dans TRANSLATIONS
 Object.keys(GAME_I18N).forEach(lang => {
   if (TRANSLATIONS[lang]) {
     Object.assign(TRANSLATIONS[lang], GAME_I18N[lang]);

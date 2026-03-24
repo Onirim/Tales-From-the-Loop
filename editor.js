@@ -1,12 +1,11 @@
 // ══════════════════════════════════════════════════════════════
-// RPG CAMPAIGN MANAGER — Éditeur de personnage
-// Les calculs de points et le rendu de fiche sont délégués
-// à game-system.js. Ce fichier gère uniquement l'UI de l'éditeur.
+// TALES FROM THE LOOP — Éditeur de personnage (Enfant)
+// Remplace editor.js du template Energy System
 // ══════════════════════════════════════════════════════════════
 
 function newChar() {
   editingId = null;
-  state     = freshState();         // défini dans game-system.js
+  state     = freshState();
   populateEditor();
   showView('editor');
 }
@@ -15,12 +14,10 @@ function editChar(id, dataOverride) {
   editingId = id;
   const src = dataOverride || (id ? chars[id] : null) || freshState();
   state = JSON.parse(JSON.stringify(src));
-  // Champs qui doivent toujours exister
-  if (!state.aptitudes)     state.aptitudes     = {};
-  if (!state.powers)        state.powers        = [];
-  if (!state.traits)        state.traits        = [];
-  if (!state.complications) state.complications = [];
-  if (!state.tags)          state.tags          = [];
+  if (!state.skills)  state.skills  = {};
+  if (!state.liens)   state.liens   = [];
+  if (!state.etat)    state.etat    = {};
+  if (!state.tags)    state.tags    = [];
   if (editingId && charTagMap[editingId]) {
     state.tags = charTagMap[editingId]
       .map(tid => allTags.find(tg => tg.id === tid))
@@ -31,10 +28,10 @@ function editChar(id, dataOverride) {
 }
 
 function populateEditor() {
-  document.getElementById('f-name').value     = state.name || '';
-  document.getElementById('f-sub').value      = state.subtitle || '';
-  document.getElementById('f-rank').value     = state.rank || 5;
-  document.getElementById('f-maturity').value = state.maturity || 'adulte';
+  document.getElementById('f-name').value      = state.name || '';
+  document.getElementById('f-sub').value       = state.subtitle || '';
+  document.getElementById('f-age').value       = state.age || 12;
+  document.getElementById('f-stereotype').value = state.stereotype || 'geek';
 
   const pubCb = document.getElementById('f-public');
   if (pubCb) {
@@ -44,20 +41,14 @@ function populateEditor() {
   }
   _updateShareCodeBox();
 
-  document.getElementById('val-e').textContent = state.energy;
-  document.getElementById('val-r').textContent = state.recovery;
-  document.getElementById('val-v').textContent = state.vigor;
-
-  renderPowers();
-  renderAptitudes();
-  renderTraits();
-  renderComplications();
+  _renderAttrs();
+  _renderSkills();
+  _renderNarratif();
+  _renderLiens();
+  _renderEtat();
 
   const bgField = document.getElementById('f-background');
   if (bgField) bgField.value = state.background || '';
-
-  document.getElementById('xp-hero-val').textContent = state.xp_hero || 0;
-  document.getElementById('xp-apt-val').textContent  = state.xp_apt  || 0;
 
   renderTagChips();
   setIllusPreview(state.illustration_url || '', state.illustration_position || 0);
@@ -66,7 +57,7 @@ function populateEditor() {
   updateAptPtsDisplay();
 }
 
-// ── Share code box ─────────────────────────────────────────────
+// ── Share code ─────────────────────────────────────────────────
 function _updateShareCodeBox() {
   const scBox = document.getElementById('share-code-box');
   const scVal = document.getElementById('share-code-val');
@@ -81,266 +72,192 @@ function _updateShareCodeBox() {
 }
 
 // ── Attributs ─────────────────────────────────────────────────
+function _renderAttrs() {
+  updatePtsDisplay();
+  ['physique', 'technique', 'coeur', 'intelligence'].forEach(attr => {
+    const el = document.getElementById('val-' + attr);
+    if (el) el.textContent = state[attr] || 1;
+    // coûts
+    const cost = document.getElementById('cost-' + attr);
+    if (cost) cost.textContent = (state[attr] || 1) + ' pts';
+  });
+}
+
 function changeAttr(attr, delta) {
-  const key = { e: 'energy', r: 'recovery', v: 'vigor' }[attr];
-  const nv  = Math.max(1, state[key] + delta);
-  if (attr === 'r' && nv > state.energy) return;
-  state[key] = nv;
-  document.getElementById('val-' + attr).textContent = nv;
+  const cur = state[attr] || 1;
+  const nv  = Math.max(1, Math.min(5, cur + delta));
+  state[attr] = nv;
+  const el = document.getElementById('val-' + attr);
+  if (el) el.textContent = nv;
+  const cost = document.getElementById('cost-' + attr);
+  if (cost) cost.textContent = nv + ' pts';
   updatePtsDisplay();
   updatePreview();
 }
 
 function updatePtsDisplay() {
-  const used = totalCost(state);   // game-system.js
-  const max  = maxPts(state);      // game-system.js
+  const used = totalAttrUsed(state);
+  const max  = attrPoints(state.age || 12);
   const el   = document.getElementById('pts-display');
-  el.textContent = `${used} / ${max}`;
-  el.className   = 'pts-value ' + (used > max ? 'over' : 'ok');
-
-  const attrCosts = { e: 2, r: 3, v: 1 };
-  const attrKeys  = { e: 'energy', r: 'recovery', v: 'vigor' };
-  ['e', 'r', 'v'].forEach(a => {
-    document.getElementById('cost-' + a).textContent =
-      `${state[attrKeys[a]] * attrCosts[a]} pts`;
-  });
+  if (el) {
+    el.textContent = `${used} / ${max}`;
+    el.className   = 'pts-value ' + (used > max ? 'over' : 'ok');
+  }
+  // Recalcule les chances
+  const luckEl = document.getElementById('luck-display');
+  if (luckEl) luckEl.textContent = luckPoints(state.age || 12);
 }
 
 function updateRankMax() {
-  state.rank = parseInt(document.getElementById('f-rank').value);
+  // utilisé par l'age maintenant
+  state.age = parseInt(document.getElementById('f-age')?.value || 12);
   updatePtsDisplay();
+  updateAptPtsDisplay();
   updatePreview();
 }
 
-// ── Pouvoirs ──────────────────────────────────────────────────
-function renderPowers() {
-  document.getElementById('powers-list').innerHTML =
-    state.powers.map((p, i) => powerEntryHTML(p, i)).join('');
-}
+// ── Compétences ────────────────────────────────────────────────
+function _renderSkills() {
+  const keySkills = STEREOTYPES[state.stereotype]?.skills || [];
+  const container = document.getElementById('skills-list');
+  if (!container) return;
 
-function powerEntryHTML(p, i) {
-  const typeOpts = POWER_TYPES().map(pt =>    // game-system.js
-    `<option value="${pt.value}" ${p.type === pt.value ? 'selected' : ''}>
-      ${pt.label} — ${pt.desc}
-    </option>`
-  ).join('');
-  const modOpts = MOD_OPTIONS().map(m =>       // game-system.js
-    `<option value="${m.value}" ${p.mod === m.value ? 'selected' : ''}>${m.label}</option>`
-  ).join('');
-
-  return `<div class="power-entry" id="pow-${i}">
-    <div class="power-entry-header">
-      <input type="text"
-        placeholder="${t('editor_power_name_ph')}"
-        value="${esc(p.name || '')}"
-        oninput="state.powers[${i}].name=this.value;updatePreview()">
-      <button class="rm-btn" onclick="removePower(${i})">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <line x1="3" y1="3" x2="13" y2="13"/>
-          <line x1="13" y1="3" x2="3" y2="13"/>
-        </svg>
-      </button>
-    </div>
-    <div class="power-entry-footer">
-      <select onchange="state.powers[${i}].type=this.value;updatePreview()">${typeOpts}</select>
-      <select class="mod-select"
-        onchange="state.powers[${i}].mod=this.value;updatePtsDisplay();updatePreview()">
-        ${modOpts}
-      </select>
-      <div class="power-cost-display">${powerCost(p)} pts</div>
-    </div>
-    <div style="margin-top:7px">
-      <input type="text"
-        placeholder="${t('editor_power_desc_ph')}"
-        style="width:100%;background:var(--bg4);border:1px solid var(--border);border-radius:4px;
-               color:var(--text);font-size:12px;padding:5px 8px;outline:none"
-        value="${esc(p.desc || '')}"
-        oninput="state.powers[${i}].desc=this.value;updatePreview()"
-        onfocus="this.style.borderColor='var(--accent)'"
-        onblur="this.style.borderColor='var(--border)'">
-    </div>
-  </div>`;
-}
-
-function addPower() {
-  state.powers.push({ name: '', type: 'offc', mod: '0', desc: '' });
-  renderPowers();
-  updatePtsDisplay();
-  updatePreview();
-}
-function removePower(i) {
-  state.powers.splice(i, 1);
-  renderPowers();
-  updatePtsDisplay();
-  updatePreview();
-}
-
-// ── Aptitudes ─────────────────────────────────────────────────
-function renderAptitudes() {
-  const grid    = document.getElementById('aptitude-grid');
-  const aptList = APTITUDES();               // game-system.js
-  const half    = Math.ceil(aptList.length / 2);
-  const left    = aptList.slice(0, half);
-  const right   = aptList.slice(half);
-
-  const cell = (label, frKey) => label ? `
-    <div class="apt-row">
-      <div class="apt-name">${label}</div>
-      <div class="apt-ctrl">
-        <button onclick="changeApt('${frKey}', -1)">−</button>
-        <div class="apt-val ${(state.aptitudes[frKey] || 0) === 0 ? 'zero' : ''}"
-          id="apt-${frKey.replace(/\s/g, '_')}">
-          ${state.aptitudes[frKey] || 0}
+  container.innerHTML = SKILL_KEYS().map(key => {
+    const val    = state.skills?.[key] || 0;
+    const isKey  = keySkills.includes(key);
+    const attr   = SKILL_ATTR[key];
+    return `
+      <div class="skill-editor-row ${isKey ? 'key-skill' : ''}">
+        <div class="skill-editor-name">
+          ${isKey ? '<span class="key-marker">★</span>' : ''}
+          ${skillLabel(key)}
+          <span class="skill-attr-tag">${t('attr_' + attr + '_short')}</span>
         </div>
-        <button onclick="changeApt('${frKey}', 1)">+</button>
-      </div>
-    </div>` : '<div></div>';
+        <div class="skill-ctrl">
+          <button onclick="changeSkill('${key}', -1)">−</button>
+          <div class="skill-val ${val === 0 ? 'zero' : ''}" id="skill-val-${key}">${val}</div>
+          <button onclick="changeSkill('${key}', 1)">+</button>
+        </div>
+      </div>`;
+  }).join('');
 
-  let rows = '';
-  for (let i = 0; i < Math.max(left.length, right.length); i++) {
-    const keyL = left[i]  ? APTITUDES_KEYS[i]        : null;
-    const keyR = right[i] ? APTITUDES_KEYS[i + half] : null;
-    rows += cell(left[i], keyL) + '<div class="aptitude-col-sep"></div>' + cell(right[i], keyR);
-  }
-  grid.innerHTML = rows;
+  updateAptPtsDisplay();
 }
 
-function changeApt(frKey, delta) {
-  const nv = Math.max(0, (state.aptitudes[frKey] || 0) + delta);
-  state.aptitudes[frKey] = nv;
-  const el = document.getElementById(`apt-${frKey.replace(/\s/g, '_')}`);
-  if (el) { el.textContent = nv; el.className = `apt-val ${nv === 0 ? 'zero' : ''}`; }
+function changeSkill(key, delta) {
+  if (!state.skills) state.skills = {};
+  const cur = state.skills[key] || 0;
+  const nv  = Math.max(0, Math.min(5, cur + delta));
+  state.skills[key] = nv;
+  const el = document.getElementById('skill-val-' + key);
+  if (el) { el.textContent = nv; el.className = 'skill-val ' + (nv === 0 ? 'zero' : ''); }
   updateAptPtsDisplay();
   updatePreview();
 }
 
 function updateAptPtsDisplay() {
-  const used = calcAptPts(state);    // game-system.js
-  const max  = maxAptPts(state);     // game-system.js
+  const used = totalSkillsUsed(state);
+  const max  = SKILL_POINTS_TOTAL;
   const el   = document.getElementById('apt-pts-display');
-  el.textContent = `${used} / ${max}`;
-  el.className   = `val ${used > max ? 'over' : 'ok'}`;
+  if (el) {
+    el.textContent = `${used} / ${max}`;
+    el.className   = `val ${used > max ? 'over' : 'ok'}`;
+  }
 }
 
-// ── Traits ────────────────────────────────────────────────────
-function renderTraits() {
-  document.getElementById('traits-list').innerHTML = (state.traits || []).map((tr, i) => `
-    <div class="trait-row">
-      <input class="trait-name" type="text"
-        placeholder="${t('editor_trait_name_ph')}"
-        value="${esc(tr.name || '')}"
-        oninput="state.traits[${i}].name=this.value;updatePreview()">
-      <div class="trait-bonus">
-        <button style="width:22px;height:22px;border-radius:3px;background:var(--bg4);
-          border:1px solid var(--border);color:var(--text2);cursor:pointer;font-size:13px;
-          display:flex;align-items:center;justify-content:center"
-          onclick="changeTrait(${i}, -1)">−</button>
-        <div class="trait-bonus-val">+${tr.bonus || 1}</div>
-        <button style="width:22px;height:22px;border-radius:3px;background:var(--bg4);
-          border:1px solid var(--border);color:var(--text2);cursor:pointer;font-size:13px;
-          display:flex;align-items:center;justify-content:center"
-          onclick="changeTrait(${i}, 1)">+</button>
-        <span style="font-size:10px;color:var(--text3);margin-left:2px">
-          ${tr.bonus || 1} pt${(tr.bonus || 1) > 1 ? 's' : ''}
-        </span>
-      </div>
-      <button class="rm-btn" onclick="removeTrait(${i})">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-          <line x1="3" y1="3" x2="13" y2="13"/>
-          <line x1="13" y1="3" x2="3" y2="13"/>
-        </svg>
-      </button>
-    </div>`).join('');
+// ── Narratif ───────────────────────────────────────────────────
+function _renderNarratif() {
+  _setVal('f-motivation',    state.motivation    || '');
+  _setVal('f-probleme',      state.probleme      || '');
+  _setVal('f-fierte',        state.fierte        || '');
+  _setVal('f-objet-fetiche', state.objet_fetiche || '');
+  _setVal('f-chanson',       state.chanson_favorite || '');
+}
+function _setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val;
 }
 
-function addTrait() {
-  state.traits.push({ name: '', bonus: 1 });
-  renderTraits();
-  updateAptPtsDisplay();
-  updatePreview();
-}
-function removeTrait(i) {
-  state.traits.splice(i, 1);
-  renderTraits();
-  updateAptPtsDisplay();
-  updatePreview();
-}
-function changeTrait(i, delta) {
-  state.traits[i].bonus = Math.max(1, (state.traits[i].bonus || 1) + delta);
-  renderTraits();
-  updateAptPtsDisplay();
-  updatePreview();
-}
-
-// ── Expérience ────────────────────────────────────────────────
-function changeXP(type, delta) {
-  const key  = type === 'hero' ? 'xp_hero' : 'xp_apt';
-  const elId = type === 'hero' ? 'xp-hero-val' : 'xp-apt-val';
-  state[key] = Math.max(0, (state[key] || 0) + delta);
-  document.getElementById(elId).textContent = state[key];
-  if (type === 'hero') updatePtsDisplay();
-  else updateAptPtsDisplay();
-  updatePreview();
-}
-
-// ── Complications ─────────────────────────────────────────────
-function renderComplications() {
-  document.getElementById('complications-list').innerHTML = (state.complications || []).map((c, i) => {
-    const label  = typeof c === 'object' ? (c.label  || '') : c;
-    const detail = typeof c === 'object' ? (c.detail || '') : '';
-    return `<div class="compl-entry">
-      <div class="compl-entry-header">
-        <input type="text"
-          placeholder="${t('editor_complication_name_ph')}"
-          value="${esc(label)}"
-          oninput="setComplLabel(${i}, this.value)">
-        <button class="rm-btn" onclick="removeComplication(${i})">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-            <line x1="3" y1="3" x2="13" y2="13"/>
-            <line x1="13" y1="3" x2="3" y2="13"/>
-          </svg>
-        </button>
-      </div>
-      <textarea
-        placeholder="${t('editor_complication_detail_ph')}"
-        oninput="setComplDetail(${i}, this.value)">${esc(detail)}</textarea>
-    </div>`;
+// ── Liens ──────────────────────────────────────────────────────
+function _renderLiens() {
+  const container = document.getElementById('liens-list');
+  if (!container) return;
+  container.innerHTML = (state.liens || []).map((l, i) => {
+    const label  = typeof l === 'object' ? (l.label  || '') : l;
+    const detail = typeof l === 'object' ? (l.detail || '') : '';
+    return `
+      <div class="compl-entry" style="margin-bottom:8px">
+        <div class="compl-entry-header">
+          <input type="text"
+            placeholder="${t('editor_lien_label_ph')}"
+            value="${esc(label)}"
+            oninput="setLienLabel(${i}, this.value)">
+          <button class="rm-btn" onclick="removeLien(${i})">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+              <line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/>
+            </svg>
+          </button>
+        </div>
+        <textarea
+          placeholder="${t('editor_lien_detail_ph')}"
+          oninput="setLienDetail(${i}, this.value)">${esc(detail)}</textarea>
+      </div>`;
   }).join('');
-  document.getElementById('add-compl-btn').style.display =
-    (state.complications || []).length >= 5 ? 'none' : 'block';
 }
 
-function setComplLabel(i, val) {
-  if (typeof state.complications[i] !== 'object')
-    state.complications[i] = { label: '', detail: '' };
-  state.complications[i].label = val;
+function setLienLabel(i, val) {
+  if (!state.liens) state.liens = [];
+  if (typeof state.liens[i] !== 'object') state.liens[i] = { label: '', detail: '' };
+  state.liens[i].label = val;
   updatePreview();
 }
-function setComplDetail(i, val) {
-  if (typeof state.complications[i] !== 'object')
-    state.complications[i] = { label: '', detail: '' };
-  state.complications[i].detail = val;
+function setLienDetail(i, val) {
+  if (!state.liens) state.liens = [];
+  if (typeof state.liens[i] !== 'object') state.liens[i] = { label: '', detail: '' };
+  state.liens[i].detail = val;
   updatePreview();
 }
-function addComplication() {
-  if ((state.complications || []).length >= 5) return;
-  state.complications.push({ label: '', detail: '' });
-  renderComplications();
+function addLien() {
+  if (!state.liens) state.liens = [];
+  state.liens.push({ label: '', detail: '' });
+  _renderLiens();
 }
-function removeComplication(i) {
-  state.complications.splice(i, 1);
-  renderComplications();
+function removeLien(i) {
+  state.liens.splice(i, 1);
+  _renderLiens();
   updatePreview();
 }
 
-// ── Preview ───────────────────────────────────────────────────
+// ── État ────────────────────────────────────────────────────────
+function _renderEtat() {
+  if (!state.etat) state.etat = {};
+  ['contrarie', 'effraye', 'epuise', 'blesse', 'brise'].forEach(key => {
+    // on stocke 'effrayé' avec accent dans le state
+    const stateKey = key === 'effraye' ? 'effrayé' : key;
+    const cb = document.getElementById('etat-' + key);
+    if (cb) cb.checked = state.etat[stateKey] || false;
+  });
+}
+
+function toggleEtat(key) {
+  if (!state.etat) state.etat = {};
+  const stateKey = key === 'effraye' ? 'effrayé' : key;
+  state.etat[stateKey] = !state.etat[stateKey];
+  updatePreview();
+}
+
+// ── Preview ────────────────────────────────────────────────────
 function updatePreview() {
-  // Synchronise l'état depuis les champs
-  state.name       = document.getElementById('f-name').value;
-  state.subtitle   = document.getElementById('f-sub').value;
-  state.rank       = parseInt(document.getElementById('f-rank').value);
-  state.maturity   = document.getElementById('f-maturity').value;
-  state.background = document.getElementById('f-background')?.value || state.background || '';
+  state.name             = document.getElementById('f-name')?.value      || state.name;
+  state.subtitle         = document.getElementById('f-sub')?.value       || '';
+  state.age              = parseInt(document.getElementById('f-age')?.value || 12);
+  state.stereotype       = document.getElementById('f-stereotype')?.value  || state.stereotype;
+  state.motivation       = document.getElementById('f-motivation')?.value   || '';
+  state.probleme         = document.getElementById('f-probleme')?.value     || '';
+  state.fierte           = document.getElementById('f-fierte')?.value       || '';
+  state.objet_fetiche    = document.getElementById('f-objet-fetiche')?.value|| '';
+  state.chanson_favorite = document.getElementById('f-chanson')?.value      || '';
+  state.background       = document.getElementById('f-background')?.value   || '';
 
   const pubCb = document.getElementById('f-public');
   if (pubCb) {
@@ -350,12 +267,15 @@ function updatePreview() {
   }
   _updateShareCodeBox();
   updateAptPtsDisplay();
+  updatePtsDisplay();
 
-  // Délègue le rendu HTML à game-system.js
+  // Re-render compétences si stéréotype a changé
+  _renderSkills();
+
   document.getElementById('preview-content').innerHTML = renderCharSheet(state);
 }
 
-// ── Save / Share ──────────────────────────────────────────────
+// ── Save / Share ───────────────────────────────────────────────
 function saveChar() { saveCharToDB(); }
 
 function shareChar() {
@@ -373,7 +293,7 @@ function copyShareCode() {
     .catch(() => prompt(t('share_code_prompt_short'), code));
 }
 
-// ── Mobile tabs ───────────────────────────────────────────────
+// ── Mobile tabs ────────────────────────────────────────────────
 function switchMobTab(tab) {
   const form    = document.getElementById('editor-form');
   const preview = document.getElementById('preview-panel');
@@ -388,3 +308,20 @@ function switchMobTab(tab) {
     btnForm?.classList.remove('active');   btnPrev?.classList.add('active');
   }
 }
+
+// stubs pour compatibilité scripts.js
+function renderPowers()        {}
+function renderAptitudes()     {}
+function renderTraits()        {}
+function renderComplications() {}
+function changeXP()            {}
+function addPower()            {}
+function removePower()         {}
+function changeApt()           {}
+function changeTrait()         {}
+function addTrait()            {}
+function removeTrait()         {}
+function addComplication()     {}
+function removeComplication()  {}
+function setComplLabel()       {}
+function setComplDetail()      {}
