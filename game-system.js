@@ -48,14 +48,6 @@ function freshState() {
     chanson_favorite:     '',
     // Liens (tableau d'objets {label, detail})
     liens:                [],
-    // État (cases cochées)
-    etat: {
-      contrarie: false,
-      effrayé:   false,
-      epuise:    false,
-      blesse:    false,
-      brise:     false,
-    },
     // Technique standard
     is_public:            false,
     illustration_url:     '',
@@ -180,7 +172,6 @@ function renderCharCardBody(c) {
     ? STEREOTYPE_OPTIONS().find(x => x.value === c.stereotype)?.label || c.stereotype
     : '—';
   const luck = luckPoints(c.age || 12);
-  const stateFlags = _cardStateFlags(c);
 
   return `
     <div class="card-name">${esc(c.name) || '—'}</div>
@@ -204,21 +195,7 @@ function renderCharCardBody(c) {
         <div class="lbl">${t('attr_intelligence_short')}</div>
       </div>
     </div>
-    ${stateFlags}
   `;
-}
-
-function _cardStateFlags(c) {
-  if (!c.etat) return '';
-  const active = [];
-  if (c.etat.brise)    active.push(`<span class="state-flag brise">${t('etat_brise')}</span>`);
-  else if (c.etat.blesse)    active.push(`<span class="state-flag blesse">${t('etat_blesse')}</span>`);
-  if (c.etat.effrayé)  active.push(`<span class="state-flag effraye">${t('etat_effraye')}</span>`);
-  if (c.etat.epuise)   active.push(`<span class="state-flag epuise">${t('etat_epuise')}</span>`);
-  if (c.etat.contrarie)active.push(`<span class="state-flag contrarie">${t('etat_contrarie')}</span>`);
-  return active.length
-    ? `<div class="card-state-flags">${active.join('')}</div>`
-    : '';
 }
 
 
@@ -280,18 +257,6 @@ function renderCharSheet(data) {
       }).join('')}
     </div>` : '';
 
-  // ── État
-  const etat = data.etat || {};
-  const etatHtml = `
-    <div class="preview-section-title">${t('preview_etat')}</div>
-    <div class="tftl-etat-grid">
-      ${_etatCheck('contrarie', etat.contrarie, t('etat_contrarie'), '-1')}
-      ${_etatCheck('effraye',   etat.effrayé,   t('etat_effraye'),  '-1')}
-      ${_etatCheck('epuise',    etat.epuise,    t('etat_epuise'),   '-1')}
-      ${_etatCheck('blesse',    etat.blesse,    t('etat_blesse'),   '-1')}
-      ${_etatCheck('brise',     etat.brise,     t('etat_brise'),    t('etat_brise_detail'))}
-    </div>`;
-
   // ── Background + chanson
   const bgHtml = data.background ? `
     <div class="preview-section-title">${t('preview_background')}</div>
@@ -331,7 +296,6 @@ function renderCharSheet(data) {
     ${skillsHtml}
     ${narratifHtml ? `<div class="preview-section-title">${t('preview_section_narratif')}</div>${narratifHtml}` : ''}
     ${liensHtml}
-    ${etatHtml}
     ${bgHtml}
     ${chansonHtml}
   `;
@@ -339,8 +303,12 @@ function renderCharSheet(data) {
 
 function _attrBlock(key, val, cls) {
   const v = val || 1;
+  // 's' (intelligence) n'a pas de classe pip native → on utilise inline style
+  const activePip = cls === 's'
+    ? `<div class="pip" style="background:var(--sup)"></div>`
+    : `<div class="pip ${cls}"></div>`;
   const dots = Array.from({length: 5}, (_, i) =>
-    `<div class="pip ${i < v ? cls : 'empty'}"></div>`
+    i < v ? activePip : `<div class="pip empty"></div>`
   ).join('');
   return `
     <div class="tftl-attr-block ${cls}">
@@ -376,16 +344,6 @@ function _narratifBlock(label, content, isFetiche = false) {
     </div>`;
 }
 
-function _etatCheck(key, checked, label, penalty) {
-  return `
-    <div class="tftl-etat-item ${checked ? 'checked' : ''}">
-      <div class="etat-box">${checked ? '✕' : ''}</div>
-      <div class="etat-info">
-        <div class="etat-label">${label}</div>
-        <div class="etat-penalty">${penalty}</div>
-      </div>
-    </div>`;
-}
 
 
 // ── 8. CLÉS i18n SPÉCIFIQUES ──────────────────────────────────
@@ -448,16 +406,7 @@ const GAME_I18N = {
     preview_fierte:           'Fierté',
     preview_objet_fetiche:    'Objet fétiche (+2 dés)',
     preview_liens:            'Liens',
-    preview_etat:             'État',
     preview_background:       'Background',
-
-    // État
-    etat_contrarie:       'Contrarié',
-    etat_effraye:         'Effrayé',
-    etat_epuise:          'Épuisé',
-    etat_blesse:          'Blessé',
-    etat_brise:           'Brisé',
-    etat_brise_detail:    'Échec automatique',
 
     // Éditeur
     editor_field_age:              'Âge',
@@ -484,7 +433,6 @@ const GAME_I18N = {
     editor_objet_fetiche_ph:       'Ex : une vieille radio CB (+2 dés quand utilisé)',
     editor_chanson_label:          'Chanson favorite',
     editor_chanson_ph:             'Ex : "It\'s a Kind of Magic" — Queen',
-    editor_section_etat:           'État',
     editor_section_liens:          'Liens',
     editor_liens_add:              '+ Ajouter un lien',
     editor_lien_label_ph:          'Nom ou relation (ex: Sophie, ma meilleure amie)',
@@ -543,15 +491,7 @@ const GAME_I18N = {
     preview_fierte:           'Pride',
     preview_objet_fetiche:    'Signature Item (+2 dice)',
     preview_liens:            'Relationships',
-    preview_etat:             'Conditions',
     preview_background:       'Background',
-
-    etat_contrarie:       'Upset',
-    etat_effraye:         'Scared',
-    etat_epuise:          'Exhausted',
-    etat_blesse:          'Injured',
-    etat_brise:           'Broken',
-    etat_brise_detail:    'Automatic failure',
 
     editor_field_age:              'Age',
     editor_field_age_detail:       '(10–15)',
@@ -577,7 +517,6 @@ const GAME_I18N = {
     editor_objet_fetiche_ph:       'Ex: an old CB radio (+2 dice when used)',
     editor_chanson_label:          'Favourite Song',
     editor_chanson_ph:             'Ex: "It\'s a Kind of Magic" — Queen',
-    editor_section_etat:           'Conditions',
     editor_section_liens:          'Relationships',
     editor_liens_add:              '+ Add relationship',
     editor_lien_label_ph:          'Name or relation (e.g. Sophie, my best friend)',

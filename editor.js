@@ -16,7 +16,6 @@ function editChar(id, dataOverride) {
   state = JSON.parse(JSON.stringify(src));
   if (!state.skills)  state.skills  = {};
   if (!state.liens)   state.liens   = [];
-  if (!state.etat)    state.etat    = {};
   if (!state.tags)    state.tags    = [];
   if (editingId && charTagMap[editingId]) {
     state.tags = charTagMap[editingId]
@@ -45,7 +44,6 @@ function populateEditor() {
   _renderSkills();
   _renderNarratif();
   _renderLiens();
-  _renderEtat();
 
   const bgField = document.getElementById('f-background');
   if (bgField) bgField.value = state.background || '';
@@ -225,24 +223,6 @@ function addLien() {
 function removeLien(i) {
   state.liens.splice(i, 1);
   _renderLiens();
-  updatePreview();
-}
-
-// ── État ────────────────────────────────────────────────────────
-function _renderEtat() {
-  if (!state.etat) state.etat = {};
-  ['contrarie', 'effraye', 'epuise', 'blesse', 'brise'].forEach(key => {
-    // on stocke 'effrayé' avec accent dans le state
-    const stateKey = key === 'effraye' ? 'effrayé' : key;
-    const cb = document.getElementById('etat-' + key);
-    if (cb) cb.checked = state.etat[stateKey] || false;
-  });
-}
-
-function toggleEtat(key) {
-  if (!state.etat) state.etat = {};
-  const stateKey = key === 'effraye' ? 'effrayé' : key;
-  state.etat[stateKey] = !state.etat[stateKey];
   updatePreview();
 }
 
