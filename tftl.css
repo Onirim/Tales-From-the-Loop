@@ -49,7 +49,7 @@
 }
 .tftl-skill-row.key-skill {
   background: rgba(200,117,51,0.06);
-  border-radius: 4px; padding: 4px 6px;
+  border-radius: 4px;
 }
 .skill-name {
   flex: 1; font-size: 13px; color: var(--text2);
