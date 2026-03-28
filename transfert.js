@@ -118,7 +118,7 @@ function _renderTransferModal() {
     </div>
 
     <div class="transfer-header-sep"></div>
-    <p class="transfer-desc">…</p>
+    <p class="transfer-desc">${t('transfer_modal_desc')}</p>
 
     <div class="transfer-section-label accent" data-step="01"><span>${t('transfer_step1')}</span></div>
     <div class="transfer-type-grid">${typesHtml}</div>
