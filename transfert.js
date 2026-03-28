@@ -117,12 +117,13 @@ function _renderTransferModal() {
       <button class="transfer-close-btn" onclick="closeTransferModal()" title="${t('btn_cancel')}">✕</button>
     </div>
 
-    <p class="transfer-desc">${t('transfer_modal_desc')}</p>
+    <div class="transfer-header-sep"></div>
+    <p class="transfer-desc">…</p>
 
-    <div class="transfer-section-label">${t('transfer_step1')}</div>
+    <div class="transfer-section-label accent" data-step="01"><span>${t('transfer_step1')}</span></div>
     <div class="transfer-type-grid">${typesHtml}</div>
 
-    <div class="transfer-section-label">${t('transfer_step2')}</div>
+    <div class="transfer-section-label" data-step="02"><span>${t('transfer_step2')}</span></div>
     <div class="transfer-field-wrap">
       <input
         type="text"
@@ -136,7 +137,7 @@ function _renderTransferModal() {
       <div id="transfer-item-preview" class="transfer-item-preview" style="display:none"></div>
     </div>
 
-    <div class="transfer-section-label">${t('transfer_step3')}</div>
+    <div class="transfer-section-label" data-step="03"><span>${t('transfer_step3')}</span></div>
     <div class="transfer-field-wrap">
       <div class="transfer-username-wrap">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14">
