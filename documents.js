@@ -60,18 +60,24 @@ async function saveDocTagsToDB(docId) {
   if (toRemove.length) {
     await sb.from('document_tags').delete().eq('document_id', docId).in('tag_id', toRemove);
     for (const tagId of toRemove) {
-      const { count } = await sb.from('document_tags')
-        .select('*', { count: 'exact', head: true }).eq('tag_id', tagId);
-      if (count === 0) {
-        await sb.from('doc_tags').delete().eq('id', tagId);
-        allDocTags = allDocTags.filter(x => x.id !== tagId);
-      }
+      await removeDocTagIfUnused(tagId);
     }
   }
   if (toAdd.length) {
     await sb.from('document_tags').insert(toAdd.map(tag_id => ({ document_id: docId, tag_id })));
   }
   docTagMap[docId] = newTagIds;
+}
+
+async function removeDocTagIfUnused(tagId) {
+  const { count: ownCount } = await sb.from('document_tags')
+    .select('*', { count: 'exact', head: true }).eq('tag_id', tagId);
+  const { count: followedCount } = await sb.from('followed_document_tags')
+    .select('*', { count: 'exact', head: true }).eq('tag_id', tagId);
+  if ((ownCount + followedCount) === 0) {
+    await sb.from('doc_tags').delete().eq('id', tagId);
+    allDocTags = allDocTags.filter(tg => tg.id !== tagId);
+  }
 }
 
 async function loadFollowedDocumentsFromDB() {
@@ -148,15 +154,8 @@ async function deleteDocumentFromDB(id) {
   delete docTagMap[id];
   if (illustrationUrl) await deleteStorageFile(illustrationUrl);
   for (const tagId of tagIds) {
-    const { count: c1 } = await sb.from('document_tags')
-      .select('*', { count:'exact', head:true }).eq('tag_id', tagId);
-    const { count: c2 } = await sb.from('followed_document_tags')
-      .select('*', { count:'exact', head:true }).eq('tag_id', tagId);
-    if ((c1 + c2) === 0) {
-      await sb.from('doc_tags').delete().eq('id', tagId);
-      allDocTags = allDocTags.filter(tg => tg.id !== tagId);
-    }
-}
+    await removeDocTagIfUnused(tagId);
+  }
   renderDocumentsList();
   showView('documents');
 }
@@ -686,6 +685,7 @@ async function removeFollowedDocTag(docId, tagId) {
   followedDocTagMap[docId] = (followedDocTagMap[docId] || []).filter(id => id !== tagId);
   await sb.from('followed_document_tags')
     .delete().eq('user_id', currentUser.id).eq('document_id', docId).eq('tag_id', tagId);
+  await removeDocTagIfUnused(tagId);
   renderFollowedDocTagChips(docId);
   renderDocumentsList();
 }
