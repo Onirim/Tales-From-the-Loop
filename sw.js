@@ -6,7 +6,7 @@
 //   - Images Supabase → Network First avec fallback cache
 // ══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'Tales-From-the-Loop-v29';
+const CACHE_NAME = 'Tales-From-the-Loop-v30';
 
 // Assets mis en cache dès l'installation
 const PRECACHE_ASSETS = [
@@ -16,6 +16,7 @@ const PRECACHE_ASSETS = [
   '/Tales-From-the-Loop/chronicles.css',
   '/Tales-From-the-Loop/documents.css',
   '/Tales-From-the-Loop/campaigns.css',
+  '/Tales-From-the-Loop/transfert.css',
   '/Tales-From-the-Loop/tftl.css',
   '/Tales-From-the-Loop/i18n.js',
   '/Tales-From-the-Loop/supabase-client.js',
@@ -25,6 +26,7 @@ const PRECACHE_ASSETS = [
   '/Tales-From-the-Loop/documents.js',
   '/Tales-From-the-Loop/campaigns.js',
   '/Tales-From-the-Loop/tags.js',
+  '/Tales-From-the-Loop/transfert.js'
 ];
 
 // ── Installation : pré-cache des assets statiques ─────────────
@@ -90,14 +92,19 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Assets locaux (JS, CSS, images statiques) → Cache First
+  // Assets locaux (JS/CSS) → Network First pour éviter les versions périmées
   if (url.hostname === self.location.hostname) {
     // HTML → Network First pour toujours avoir la dernière version
     if (request.destination === 'document') {
       event.respondWith(networkFirstWithCache(request));
       return;
     }
-    // Tout le reste (JS, CSS, fonts locales, icônes) → Cache First
+    // JS/CSS → Network First pour éviter le besoin de hard refresh (Ctrl+Maj+R)
+    if (request.destination === 'script' || request.destination === 'style') {
+      event.respondWith(networkFirstWithCache(request));
+      return;
+    }
+    // Le reste (fonts locales, icônes, images statiques) → Cache First
     event.respondWith(cacheFirst(request));
     return;
   }
