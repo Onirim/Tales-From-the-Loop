@@ -213,25 +213,44 @@ async function followCharByCode(code) {
   if (!code.trim()) return;
   const clean = code.trim().toUpperCase();
   const { data, error } = await sb.from('characters')
-    .select('id, name, user_id, is_public').eq('share_code', clean).eq('is_public', true).single();
+    .select('id, name, user_id, is_public')
+    .eq('share_code', clean).eq('is_public', true).single();
   if (error || !data) { showToast(t('toast_char_not_found')); return; }
   if (data.user_id === currentUser.id) { showToast(t('toast_char_own')); return; }
   if (followedIds.includes(data.id))  { showToast(t('toast_char_already_followed')); return; }
+ 
   const { error: insertError } = await sb.from('followed_characters')
     .insert({ user_id: currentUser.id, character_id: data.id });
   if (insertError) { showToast(t('toast_char_follow_error')); return; }
+ 
   followedIds.push(data.id);
+  await syncOwnerTagsToMe('char', data.id);   // ← sync tags propriétaire
   await loadFollowedCharsFromDB();
+  await loadTagsFromDB();
   document.getElementById('follow-code-input').value = '';
   renderList();
   showToast(ti('toast_char_added', { name: data.name }));
 }
 
 async function unfollowChar(charId) {
+  // 1. Supprime les tags locaux liés à ce personnage
+  await sb.from('followed_character_tags')
+    .delete()
+    .eq('user_id', currentUser.id)
+    .eq('character_id', charId);
+ 
+  // 2. Désabonnement
   await sb.from('followed_characters')
     .delete().eq('user_id', currentUser.id).eq('character_id', charId);
+ 
   followedIds = followedIds.filter(id => id !== charId);
   delete followedChars[charId];
+  delete followedTagMap[charId];
+ 
+  // 3. Purge les tags orphelins dans `tags`
+  await cleanupOrphanTags('char');
+  await loadTagsFromDB();   // rafraîchit allTags + charTagMap + followedTagMap
+ 
   renderList();
   showToast(t('toast_char_unfollowed'));
 }
@@ -472,6 +491,36 @@ function showSharedChar(data) {
 function shareSharedChar() {
   if (!currentSharedCharCode) { showToast(t('toast_char_not_found')); return; }
   copyUrl(buildShareUrl('char', currentSharedCharCode));
+}
+
+/**
+ * Appelle sync_owner_tags via RPC.
+ * p_item_id est passé en string (TEXT) pour éviter le cast UUID
+ * que PostgREST ne sait pas faire automatiquement depuis le JSON.
+ */
+async function syncOwnerTagsToMe(type, itemId) {
+  try {
+    const { error } = await sb.rpc('sync_owner_tags', {
+      p_item_type: type,
+      p_item_id:   String(itemId),   // ← TEXT, pas UUID
+    });
+    if (error) console.warn('syncOwnerTagsToMe:', error.message);
+  } catch (err) {
+    console.warn('syncOwnerTagsToMe: non-fatal error', err);
+  }
+}
+ 
+/**
+ * Appelle cleanup_orphan_char_tags ou cleanup_orphan_doc_tags.
+ * À appeler après un désabonnement ou la suppression d'un tag local.
+ */
+async function cleanupOrphanTags(type) {
+  try {
+    const fn = type === 'doc' ? 'cleanup_orphan_doc_tags' : 'cleanup_orphan_char_tags';
+    await sb.rpc(fn, { p_user_id: currentUser.id });
+  } catch (err) {
+    console.warn('cleanupOrphanTags: non-fatal error', err);
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
