@@ -79,19 +79,18 @@ async function loadCampaignItems(campaignId) {
 
 async function syncFollowedCampaignItems() {
   if (!followedCampaignIds.length) return;
-
-  // Charge tous les items de toutes les campagnes suivies en une seule requête
+ 
   const { data: items } = await sb
     .from('campaign_items')
     .select('campaign_id, item_type, share_code')
     .in('campaign_id', followedCampaignIds);
-
+ 
   if (!items || !items.length) return;
-
+ 
   const toFollowChar = [];
   const toFollowChr  = [];
   const toFollowDoc  = [];
-
+ 
   for (const item of items) {
     if (item.item_type === 'char') {
       const alreadyOwn      = Object.values(chars).some(c => c.share_code === item.share_code);
@@ -107,10 +106,9 @@ async function syncFollowedCampaignItems() {
       if (!alreadyOwn && !alreadyFollowed) toFollowDoc.push(item.share_code);
     }
   }
-
+ 
   let newlyFollowed = 0;
-
-  // Personnages
+ 
   if (toFollowChar.length) {
     const { data: charRows } = await sb
       .from('characters')
@@ -122,12 +120,18 @@ async function syncFollowedCampaignItems() {
       if (followedIds.includes(row.id)) continue;
       const { error } = await sb.from('followed_characters')
         .insert({ user_id: currentUser.id, character_id: row.id });
-      if (!error) { followedIds.push(row.id); newlyFollowed++; }
+      if (!error) {
+        followedIds.push(row.id);
+        newlyFollowed++;
+        await syncOwnerTagsToMe('char', row.id);   // ← sync tags
+      }
     }
-    if (charRows?.length) await loadFollowedCharsFromDB();
+    if (charRows?.length) {
+      await loadFollowedCharsFromDB();
+      await loadTagsFromDB();
+    }
   }
-
-  // Chroniques
+ 
   if (toFollowChr.length) {
     const { data: chrRows } = await sb
       .from('chronicles')
@@ -143,8 +147,7 @@ async function syncFollowedCampaignItems() {
     }
     if (chrRows?.length) await loadFollowedChroniclesFromDB();
   }
-
-  // Documents
+ 
   if (toFollowDoc.length) {
     const { data: docRows } = await sb
       .from('documents')
@@ -156,11 +159,18 @@ async function syncFollowedCampaignItems() {
       if (followedDocIds.includes(row.id)) continue;
       const { error } = await sb.from('followed_documents')
         .insert({ user_id: currentUser.id, document_id: row.id });
-      if (!error) { followedDocIds.push(row.id); newlyFollowed++; }
+      if (!error) {
+        followedDocIds.push(row.id);
+        newlyFollowed++;
+        await syncOwnerTagsToMe('doc', row.id);    // ← sync tags
+      }
     }
-    if (docRows?.length) await loadFollowedDocumentsFromDB();
+    if (docRows?.length) {
+      await loadFollowedDocumentsFromDB();
+      await loadDocTagsFromDB();
+    }
   }
-
+ 
   if (newlyFollowed > 0) {
     showToast(ti('toast_campaign_synced', { n: newlyFollowed }));
   }
