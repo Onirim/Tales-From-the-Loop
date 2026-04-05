@@ -174,20 +174,39 @@ async function followDocByCode(code) {
   if (error || !data) { showToast(t('toast_doc_not_found')); return; }
   if (data.user_id === currentUser.id) { showToast(t('toast_doc_own')); return; }
   if (followedDocIds.includes(data.id)) { showToast(t('toast_doc_already_followed')); return; }
+ 
   const { error: err } = await sb.from('followed_documents')
     .insert({ user_id: currentUser.id, document_id: data.id });
   if (err) { showToast(t('toast_doc_follow_error')); return; }
+ 
   followedDocIds.push(data.id);
+  await syncOwnerTagsToMe('doc', data.id);   // ← sync tags propriétaire
   await loadFollowedDocumentsFromDB();
+  await loadDocTagsFromDB();
   document.getElementById('doc-follow-input').value = '';
   renderDocumentsList();
   showToast(ti('toast_doc_subscribed', { title: data.title }));
 }
 
 async function unfollowDocument(id) {
-  await sb.from('followed_documents').delete().eq('user_id', currentUser.id).eq('document_id', id);
+  // 1. Supprime les tags locaux liés à ce document
+  await sb.from('followed_document_tags')
+    .delete()
+    .eq('user_id', currentUser.id)
+    .eq('document_id', id);
+ 
+  // 2. Désabonnement
+  await sb.from('followed_documents')
+    .delete().eq('user_id', currentUser.id).eq('document_id', id);
+ 
   followedDocIds = followedDocIds.filter(i => i !== id);
   delete followedDocuments[id];
+  delete followedDocTagMap[id];
+ 
+  // 3. Purge les tags orphelins dans `doc_tags`
+  await cleanupOrphanTags('doc');
+  await loadDocTagsFromDB();
+ 
   renderDocumentsList();
   showToast(t('toast_doc_unsubscribed'));
 }
@@ -779,8 +798,14 @@ function renderFollowedDocTagChips(docId, tags) {
 async function removeFollowedDocTag(docId, tagId) {
   followedDocTagMap[docId] = (followedDocTagMap[docId] || []).filter(id => id !== tagId);
   await sb.from('followed_document_tags')
-    .delete().eq('user_id', currentUser.id).eq('document_id', docId).eq('tag_id', tagId);
-  await removeDocTagIfUnused(tagId);
+    .delete()
+    .eq('user_id', currentUser.id)
+    .eq('document_id', docId)
+    .eq('tag_id', tagId);
+ 
+  await cleanupOrphanTags('doc');
+  await loadDocTagsFromDB();
+ 
   renderFollowedDocTagChips(docId);
   renderDocumentsList();
 }
