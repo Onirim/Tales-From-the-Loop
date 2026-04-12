@@ -74,11 +74,15 @@ async function loadFollowedChroniclesFromDB() {
   if (ids.length) {
     const { data: entries } = await sb
       .from('chronicle_entries')
-      .select('chronicle_id')
+      .select('id, chronicle_id')
       .in('chronicle_id', ids);
+    const entryIdsByChronicle = {};
     (entries || []).forEach(e => {
       countMap[e.chronicle_id] = (countMap[e.chronicle_id] || 0) + 1;
+      if (!entryIdsByChronicle[e.chronicle_id]) entryIdsByChronicle[e.chronicle_id] = [];
+      entryIdsByChronicle[e.chronicle_id].push(e.id);
     });
+    ids.forEach(id => unreadMarkers.syncChronicleEntries(id, entryIdsByChronicle[id] || []));
   }
 
   followedChronicles = {};
@@ -99,6 +103,7 @@ async function loadEntriesForChronicle(chrId) {
     .order('created_at', { ascending: false });
   if (error) { console.error('Erreur chargement entrées:', error); return; }
   chrEntries[chrId] = data || [];
+  unreadMarkers.syncChronicleEntries(chrId, chrEntries[chrId].map(e => e.id));
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -264,6 +269,7 @@ function renderChroniclesList() {
 
   document.getElementById('chr-count-badge').textContent = total ? `(${total})` : '';
 
+  unreadMarkers.refreshNavBadges({ followedChars, followedDocuments, followedChronicles, chrEntries });
   if (!total) { grid.innerHTML = ''; empty.style.display = 'flex'; return; }
   empty.style.display = 'none';
   grid.innerHTML = [
@@ -295,7 +301,10 @@ function chrCardHTML(id, c, isFollowed) {
     </div>`;
 
   if (isFollowed) {
-    return `<div class="chr-card" onclick="showChrDetail('${id}')">
+    const entryIds = (chrEntries[id] || []).map(e => e.id);
+    const hasUnreadEntry = unreadMarkers.chronicleHasUnreadEntries(id, entryIds, false);
+    const showUnread = unreadMarkers.isChronicleUnread(id, false) || hasUnreadEntry;
+    return `<div class="chr-card" onclick="showChrDetail('${id}')">${unreadMarkers.cardDotHTML(showUnread)}
       ${c.illustration_url ? `<img class="card-illus" src="${esc(c.illustration_url)}" style="object-position:center ${c.illustration_position||0}%" onclick="event.stopPropagation();openLightbox('${esc(c.illustration_url)}')" alt="">` : ''}
       <div class="chr-card-actions">
         <button class="icon-btn danger" onclick="event.stopPropagation();unfollowChronicle('${id}')" title="${t('btn_unsubscribe')}">
@@ -344,6 +353,8 @@ async function showChrDetail(chrId) {
   await loadEntriesForChronicle(chrId);
   renderChrDetail();
   showView('chr-detail');
+  if (!chronicles[chrId]) unreadMarkers.markChronicleRead(chrId);
+  unreadMarkers.refreshNavBadges({ followedChars, followedDocuments, followedChronicles, chrEntries });
   const chr = chronicles[chrId] || followedChronicles[chrId];
   if (chr?.share_code) setHash('chr', chr.share_code);
 }
@@ -389,13 +400,14 @@ function renderChrDetail() {
   `;
 }
 
-function entryRowHTML(e, isOwn) {
+function entryRowHTML(e, isOwn, chrId) {
   const date = e.created_at
     ? new Date(e.created_at).toLocaleDateString(currentLang === 'en' ? 'en-GB' : 'fr-FR', { day:'numeric', month:'long', year:'numeric' })
     : '';
   const preview = (e.content || '').replace(/#+\s*/g,'').replace(/\*+/g,'').replace(/\n/g,' ').slice(0, 160);
 
-  return `<div class="entry-row" onclick="openEntryReader('${e.id}')">
+  const unreadDot = unreadMarkers.entryDotHTML(unreadMarkers.isEntryUnread(chrId, e.id, isOwn));
+  return `<div class="entry-row" onclick="openEntryReader('${e.id}')">${unreadDot}
     <div class="entry-row-header">
       <div class="entry-row-title">${esc(e.title)}</div>
       <div class="entry-row-date">${date}</div>
@@ -569,6 +581,8 @@ function openEntryReader(entryId) {
     <div class="chr-reader-body">${entry.content ? marked.parse(entry.content) : ''}</div>
   `;
   showView('entry-reader');
+  if (!chronicles[activeChrId]) unreadMarkers.markEntryRead(activeChrId, entryId);
+  unreadMarkers.refreshNavBadges({ followedChars, followedDocuments, followedChronicles, chrEntries });
   const chrShareCode = (chronicles[activeChrId] || followedChronicles[activeChrId])?.share_code;
   if (chrShareCode) setHash('entry', chrShareCode, entryId);
 }
