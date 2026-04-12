@@ -297,12 +297,13 @@ async function onSignedIn(user) {
   document.getElementById('auth-screen').classList.remove('active');
   document.getElementById('loading-overlay').classList.add('active');
   document.getElementById('app').style.display = 'flex';
+  await unreadMarkers.initFromDB(currentUser.id);
   await Promise.all([
     loadCharsFromDB(),
     loadChroniclesFromDB(),
     loadDocumentsFromDB(),
   ]);
-  await loadCampaignsFromDB();
+  unreadMarkers.refreshNavBadges({ followedChars, followedDocuments, followedChronicles, chrEntries });
   document.getElementById('loading-overlay').classList.remove('active');
   isAppReady = true;
   if (!navigateFromHash()) {
@@ -313,6 +314,7 @@ async function onSignedIn(user) {
 
 function onSignedOut() {
   currentUser = null;
+  unreadMarkers.resetCache();
   chars = {};
   document.getElementById('loading-overlay').classList.remove('active');
   document.getElementById('auth-screen').classList.add('active');
@@ -379,6 +381,7 @@ function showView(view) {
   if (view === 'campaign-editor') clearHash();
   if (view === 'rulebook') { clearHash(); loadRulebook(); }
   applyTranslations();
+  unreadMarkers.refreshNavBadges({ followedChars, followedDocuments, followedChronicles, chrEntries });
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -399,6 +402,7 @@ function renderList() {
   const grid  = document.getElementById('char-grid');
   const empty = document.getElementById('empty-state');
   const allKeys = [...keys, ...followedKeys];
+  unreadMarkers.refreshNavBadges({ followedChars, followedDocuments, followedChronicles, chrEntries });
   if (!allKeys.length) { grid.innerHTML = ''; empty.style.display = 'flex'; return; }
   empty.style.display = 'none';
   grid.innerHTML = [
@@ -413,7 +417,8 @@ function cardHTML(id, c, isFollowed = false) {
   const cardTags = _buildTagChips(id, isFollowed ? followedTagMap : charTagMap);
 
   if (isFollowed) {
-    return `<div class="char-card" onclick="showSharedChar(followedChars['${id}'])">
+    const unreadDot = unreadMarkers.cardDotHTML(unreadMarkers.isCharacterUnread(id, false));
+    return `<div class="char-card" onclick="showSharedChar(followedChars['${id}'])">${unreadDot}
       ${c.illustration_url ? _cardIllus(c) : ''}
       <div class="card-actions">
         <button class="icon-btn" onclick="event.stopPropagation();editFollowedTags('${id}')"
@@ -497,6 +502,8 @@ function showSharedChar(data) {
     ${renderCharSheet(data)}
   `;
   showView('shared');
+  unreadMarkers.refreshNavBadges({ followedChars, followedDocuments, followedChronicles, chrEntries });
+  if (characterId) unreadMarkers.markCharacterRead(characterId);
   currentSharedCharCode = data.share_code || null;
   if (data.share_code) setHash('char', data.share_code);
 }
