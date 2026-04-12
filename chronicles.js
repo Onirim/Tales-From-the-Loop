@@ -376,7 +376,7 @@ function renderChrDetail() {
     ? `<span class="chr-detail-owner">${t('chr_followed_owner')}${esc(chr._owner_name)}</span>` : '';
 
   const entriesHtml = entries.length
-    ? entries.map(e => entryRowHTML(e, isOwn)).join('')
+    ? entries.map(e => entryRowHTML(e, isOwn, activeChrId)).join('')
     : `<div class="chr-no-entries">${t('chr_no_entries')}</div>`;
 
   document.getElementById('chr-detail-content').innerHTML = `
