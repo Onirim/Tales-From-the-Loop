@@ -481,6 +481,25 @@ function renderCampaignDetail() {
   if (!c) return;
   const isOwn = !!campaigns[activeCampaignId];
   const items = campaignItems[activeCampaignId] || [];
+  const isItemUnread = (item) => {
+    if (isOwn) return false;
+    if (item.item_type === 'char') {
+      const followedId = Object.keys(followedChars).find(id => followedChars[id]?.share_code === item.share_code);
+      return unreadMarkers.isCharacterUnread(followedId, false);
+    }
+    if (item.item_type === 'chr') {
+      const followedId = Object.keys(followedChronicles).find(id => followedChronicles[id]?.share_code === item.share_code);
+      if (!followedId) return false;
+      if (unreadMarkers.isChronicleUnread(followedId, false)) return true;
+      const entries = chrEntries[followedId] || [];
+      return unreadMarkers.chronicleHasUnreadEntries(followedId, entries.map(e => e.id), false);
+    }
+    if (item.item_type === 'doc') {
+      const followedId = Object.keys(followedDocuments).find(id => followedDocuments[id]?.share_code === item.share_code);
+      return unreadMarkers.isDocumentUnread(followedId, false);
+    }
+    return false;
+  };
 
   // Résolution des noms à partir des stores en mémoire
   const resolve = (item) => {
