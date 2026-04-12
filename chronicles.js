@@ -82,7 +82,11 @@ async function loadFollowedChroniclesFromDB() {
       if (!entryIdsByChronicle[e.chronicle_id]) entryIdsByChronicle[e.chronicle_id] = [];
       entryIdsByChronicle[e.chronicle_id].push(e.id);
     });
-    ids.forEach(id => unreadMarkers.syncChronicleEntries(id, entryIdsByChronicle[id] || []));
+      ids.forEach(id => {
+      const entryIds = entryIdsByChronicle[id] || [];
+      unreadMarkers.syncChronicleEntries(id, entryIds);
+      chrEntries[id] = entryIds.map(entryId => ({ id: entryId }));
+    });
   }
 
   followedChronicles = {};
