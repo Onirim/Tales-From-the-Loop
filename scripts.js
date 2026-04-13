@@ -302,6 +302,7 @@ async function onSignedIn(user) {
     loadCharsFromDB(),
     loadChroniclesFromDB(),
     loadDocumentsFromDB(),
+    loadCampaignsFromDB(),
   ]);
   unreadMarkers.refreshNavBadges({ followedChars, followedDocuments, followedChronicles, chrEntries });
   document.getElementById('loading-overlay').classList.remove('active');
