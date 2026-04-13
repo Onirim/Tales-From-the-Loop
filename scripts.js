@@ -490,6 +490,8 @@ function _trashIcon() {
 let currentSharedCharCode = null;
 
 function showSharedChar(data, followedCharId = null) {
+  const sharedCharacterId = data?._db_id || null;
+  if (sharedCharacterId) unreadMarkers.markCharacterRead(sharedCharacterId);
   document.getElementById('shared-content').innerHTML = `
     <div class="shared-banner">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
