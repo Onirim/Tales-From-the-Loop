@@ -270,7 +270,15 @@ const TRANSLATIONS = {
     share_copy_btn:        'Copier',
     share_code_prompt:     'Code de partage à transmettre :',
     share_code_prompt_short:'Code de partage :',
+
+    // ── Export ───────────────────────────────────────────────
+    user_export_visible:            'Exporter mes données visibles',
+    export_in_progress:             'Export en cours…',
+    export_done:                    'Export prêt !',
+    export_error:                   'Échec de l’export',
+    export_error_zip_lib:           'Bibliothèque ZIP indisponible.',
   },
+    
 
   // ════════════════════════════════════════════════════════════
   // ENGLISH
@@ -527,6 +535,13 @@ const TRANSLATIONS = {
     share_copy_btn:        'Copy',
     share_code_prompt:     'Share code to send:',
     share_code_prompt_short:'Share code:',
+
+    // ── Export ───────────────────────────────────────────────
+    user_export_visible:            'Export visible data',
+    export_in_progress:             'Export in progress…',
+    export_done:                    'Export ready!',
+    export_error:                   'Export failed',
+    export_error_zip_lib:           'ZIP library unavailable.',
   },
 };
 
