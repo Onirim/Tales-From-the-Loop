@@ -352,7 +352,7 @@ function showView(view) {
   document.getElementById('nav-map')?.classList.toggle('active', inMap);
   document.getElementById('nav-rulebook')?.classList.toggle('active', inRulebook);
 
-  const listViews = ['list', 'chronicles', 'documents', 'campaigns', 'map', 'rulebook'];
+  const listViews = ['list', 'chronicles', 'documents', 'map', 'campaigns', 'rulebook'];
   const langSelect = document.getElementById('lang-select');
   const isMobileTopbar = window.matchMedia('(max-width: 768px)').matches;
   const showLangSelect = !isMobileTopbar || listViews.includes(view);
