@@ -15,20 +15,20 @@ const MAP_CONFIG = {
   //     avec key: 'default' comme première carte.
   maps: [
     {
-      key:         'default',              // ← identifiant unique, ne pas changer si données existantes
-      name:        'Test Map',     // ← nom affiché dans le sélecteur
-      image:       './maps/donjon_iffre.jpg',
-      imageWidth:  2481,
-      imageHeight: 2481,
+      key:         'loop',              // ← identifiant unique, ne pas changer si données existantes
+      name:        'Loop',     // ← nom affiché dans le sélecteur
+      image:       './maps/Carte-Loop-F80.png',
+      imageWidth:  4500,
+      imageHeight: 3144,
     },
     // Décommentez et remplissez pour ajouter d'autres cartes :
-    //{
-    //  key:         'city',
-    //  name:        'City',
-    //  image:       '/Camply/pictures/city.png',
-    //  imageWidth:  4372,
-    //  imageHeight: 3836,
-    //},
+    {
+      key:         'auroreville',
+      name:        'Auroreville',
+      image:       './maps/Carte-Auroreville-F80.jpg',
+      imageWidth:  4507,
+      imageHeight: 3143,
+    },
     // {
     //   key:         'dungeon',
     //   name:        'Donjon',
