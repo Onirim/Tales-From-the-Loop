@@ -169,6 +169,10 @@
   background: rgba(92,155,224,0.12); color: var(--def);
   border: 1px solid rgba(92,155,224,0.25);
 }
+.campaign-item-type-map {
+  background: rgba(92,191,122,0.12); color: var(--mov);
+  border: 1px solid rgba(92,191,122,0.25);
+}
 
 /* Bouton retrait d'item */
 .campaign-item-remove {
