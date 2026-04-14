@@ -348,6 +348,10 @@ function showView(view) {
   document.getElementById('nav-campaigns').classList.toggle('active', inCampaign);
   document.getElementById('nav-rulebook')?.classList.toggle('active', inRulebook);
 
+  const listViews = ['list', 'chronicles', 'documents', 'campaigns', 'map', 'rulebook'];
+  const langSelect = document.getElementById('lang-select');
+  if (langSelect) langSelect.style.display = listViews.includes(view) ? '' : 'none';
+
   // Boutons de partage
   const shareButtons = {
     'share-btn':              view === 'editor',
